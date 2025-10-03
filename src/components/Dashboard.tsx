@@ -363,9 +363,8 @@ export default function Dashboard() {
       });
 
       if (error) {
-        console.error('Error deleting user:', error);
-        alert('Failed to delete user: ' + (error.message || 'Unknown error'));
-        return;
+        console.error('Delete request failed:', error);
+        throw error;
       }
 
       console.log('User deleted successfully');
