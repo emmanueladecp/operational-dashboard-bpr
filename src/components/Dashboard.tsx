@@ -1,0 +1,1158 @@
+import { useState, useMemo, useEffect } from "react";
+import { Card } from "./ui/card";
+import { Button } from "./ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Badge } from "./ui/badge";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Checkbox } from "./ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { UserButton, useUser, useAuth } from "@clerk/clerk-react";
+//import { supabase } from "../lib/supabase";
+import { Package, TrendingUp, TrendingDown, MapPin, Plus, Edit, Trash2, Search, Users } from 'lucide-react';
+// Add these imports at the top
+import { useSession } from "@clerk/clerk-react";
+import { createClerkSupabaseClient, resetClerkSupabaseClient } from "../lib/supabase";
+
+
+interface User {
+  id: string;
+  clerk_id: string;
+  name: string;
+  role: string;
+  locations?: string[];
+}
+
+interface Location {
+  id: number;
+  name: string;
+  value: string;
+  is_active: boolean;
+}
+
+export default function Dashboard() {
+  const { session } = useSession();
+  const { user, isLoaded } = useUser();
+  const { signOut: clerkSignOut } = useAuth();
+  const [userRole, setUserRole] = useState<'NO_ROLE' | 'SUPERADMIN_ROLE' | 'BOD_ROLE' | 'SALES_MANAGER_ROLE' | 'SALES_SUPERVISOR_ROLE' | 'AUDITOR_ROLE' | null>(null);
+  const [currentUserLocations, setCurrentUserLocations] = useState<string[]>([]);
+  const [allLocations, setAllLocations] = useState<Location[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [timePeriod, setTimePeriod] = useState("1");
+  const [viewBy, setViewBy] = useState("location");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editingLocation, setEditingLocation] = useState<Location | null>(null);
+  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newUserRole, setNewUserRole] = useState('');
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+
+  // Create authenticated client
+  const supabaseClient = useMemo(() => {
+    if (!session) {
+      resetClerkSupabaseClient();
+      return null;
+    }
+    return createClerkSupabaseClient(() => session.getToken());
+  }, [session]);
+
+  // Sync user to Supabase if not exists and fetch current user details
+  useEffect(() => {
+    if (isLoaded && user && supabaseClient) {
+      const syncUser = async () => {
+        const { data: existingUser, error: fetchError } = await supabaseClient
+          .from('users')
+          .select('id, name')
+          .eq('clerk_id', user.id)
+          .single();
+
+        if (fetchError && fetchError.code !== 'PGRST116') {
+          console.error('Error fetching user:', fetchError);
+          return;
+        }
+
+        const updateData = {
+          name: user.username || user.fullName,
+        };
+
+        if (!existingUser) {
+          const { error: insertError } = await supabaseClient
+            .from('users')
+            .insert({ clerk_id: user.id, role: 'NO_ROLE', ...updateData });
+
+          if (insertError) {
+            console.error('Error creating user:', insertError);
+          }
+        } else {
+          const { error: updateError } = await supabaseClient
+            .from('users')
+            .update({ ...updateData })
+            .eq('id', existingUser.id);
+
+          if (updateError) {
+            console.error('Error updating user:', updateError);
+          }
+        }
+      };
+
+      syncUser();
+    }
+  }, [isLoaded, user, supabaseClient]);
+
+  // Fetch current user role and locations
+  useEffect(() => {
+    if (isLoaded && user && supabaseClient) {
+      const fetchCurrentUser = async () => {
+        const { data, error } = await supabaseClient
+          .from('users')
+          .select('role, locations')
+          .eq('clerk_id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching current user:', error);
+          return;
+        }
+
+        if (data) {
+          setUserRole(data.role);
+          setCurrentUserLocations(data.locations || []);
+        }
+      };
+
+      fetchCurrentUser();
+    }
+  }, [isLoaded, user, supabaseClient]);
+
+  // Fetch all users and locations for management (SUPERADMIN only)
+  useEffect(() => {
+    if (userRole === 'SUPERADMIN_ROLE' && supabaseClient) {
+      const fetchData = async () => {
+        // Fetch all users
+        const { data: usersData, error: usersError } = await supabaseClient
+          .from('users')
+          .select('*');
+
+        if (usersError) {
+          console.error('Error fetching users:', usersError);
+          return;
+        }
+
+        setAllUsers(usersData || []);
+
+        // Fetch active locations
+        const { data: locationsData, error: locationsError } = await supabaseClient
+          .from('master_locations')
+          .select('*');
+
+        if (locationsError) {
+          console.error('Error fetching locations:', locationsError);
+          return;
+        }
+
+        setAllLocations(locationsData?.filter((l: Location) => l.is_active) || []);
+      };
+
+      fetchData();
+    }
+  }, [userRole, supabaseClient]);
+
+  // Mock data for stocks (will be filtered later)
+  const stockData = useMemo(() => {
+    const baseData = [
+      { name: "Beras Mentah - Gudang A", category: "Bahan Baku", location: "Jakarta", quantity: 1250, unit: "ton", status: "Normal" },
+      { name: "Beras Mentah - Gudang B", category: "Bahan Baku", location: "Surabaya", quantity: 890, unit: "ton", status: "Rendah" },
+      { name: "Beras Premium - Jakarta", category: "Barang Jadi", location: "Jakarta", quantity: 450, unit: "ton", status: "Normal" },
+      { name: "Beras Standar - Surabaya", category: "Barang Jadi", location: "Surabaya", quantity: 320, unit: "ton", status: "Normal" },
+      { name: "Beras Organik - Bandung", category: "Barang Jadi", location: "Bandung", quantity: 180, unit: "ton", status: "Tinggi" },
+    ];
+
+    // Filter for sales roles
+    if (userRole === 'SALES_MANAGER_ROLE' || userRole === 'SALES_SUPERVISOR_ROLE') {
+      return baseData.filter(item => currentUserLocations.includes(item.location));
+    }
+
+    return baseData;
+  }, [userRole, currentUserLocations]);
+
+  // Mock data for sales (varies by time period)
+  const getSalesData = (period: string) => {
+    const baseData = [
+      { name: "Jakarta", value: 145, category: "Premium" },
+      { name: "Surabaya", value: 98, category: "Standar" },
+      { name: "Bandung", value: 67, category: "Organik" },
+      { name: "Medan", value: 89, category: "Premium" },
+      { name: "Yogyakarta", value: 45, category: "Standar" },
+    ];
+
+    const multiplier = period === "1" ? 1 : period === "2" ? 1.8 : 2.5;
+    let data = baseData.map(item => ({ ...item, value: Math.round(item.value * multiplier) }));
+
+    // Filter for sales roles
+    if (userRole === 'SALES_MANAGER_ROLE' || userRole === 'SALES_SUPERVISOR_ROLE') {
+      data = data.filter(item => currentUserLocations.includes(item.name));
+    }
+
+    return data;
+  };
+
+  // Mock data for purchases
+  const getPurchaseData = (period: string) => {
+    const baseData = [
+      { name: "Petani Lokal - Jawa", value: 200, category: "Beras Mentah" },
+      { name: "Koperasi - Sumatera", value: 150, category: "Beras Mentah" },
+      { name: "Supplier Premium", value: 80, category: "Beras Khusus" },
+      { name: "Perkebunan Organik", value: 60, category: "Beras Organik" },
+    ];
+
+    const multiplier = period === "1" ? 1 : period === "2" ? 1.9 : 2.7;
+    let data = baseData.map(item => ({ ...item, value: Math.round(item.value * multiplier) }));
+
+    // Filter for sales roles (assuming purchases are associated with locations, but since mock doesn't have location, skip for now or add location to mock)
+    if (userRole === 'SALES_MANAGER_ROLE' || userRole === 'SALES_SUPERVISOR_ROLE') {
+      // For purchases, since mock doesn't have location, show all for now
+    }
+
+    return data;
+  };
+
+  const pieColors = ['#22c55e', '#16a34a', '#15803d', '#166534', '#14532d'];
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Rendah': return 'bg-red-100 text-red-800 border-red-200';
+      case 'Tinggi': return 'bg-blue-100 text-blue-800 border-blue-200';
+      default: return 'bg-green-100 text-green-800 border-green-200';
+    }
+  };
+  
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'SUPERADMIN_ROLE': return 'bg-red-100 text-red-800 border-red-200';
+      case 'BOD_ROLE': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'SALES_MANAGER_ROLE': return 'bg-green-100 text-green-800 border-green-200';
+      case 'SALES_SUPERVISOR_ROLE': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'AUDITOR_ROLE': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getRoleDisplay = (role: string) => {
+    switch (role) {
+      case 'SUPERADMIN_ROLE': return 'Super Admin';
+      case 'BOD_ROLE': return 'BOD';
+      case 'SALES_MANAGER_ROLE': return 'Sales Manager';
+      case 'SALES_SUPERVISOR_ROLE': return 'Sales Supervisor';
+      case 'AUDITOR_ROLE': return 'Auditor';
+      default: return role;
+    }
+  };
+
+  const handleAddUser = () => {
+    setEditingUser(null);
+    setNewUsername('');
+    setNewPassword('');
+    setNewUserRole('');
+    setSelectedLocations([]);
+    setIsUserDialogOpen(true);
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setSelectedLocations(user.locations || []);
+    setIsUserDialogOpen(true);
+  };
+
+  const handleSaveUser = async () => {
+    if (!supabaseClient) return;
+
+    setIsCreatingUser(true);
+
+    try {
+      if (editingUser) {
+        // UPDATE existing user via backend API to sync with Clerk metadata
+        const response = await fetch(`http://localhost:3001/api/users/${editingUser.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            role: editingUser.role,
+            locations: selectedLocations
+          })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          console.error('Error updating user:', result);
+          alert('Failed to update user: ' + (result.error || 'Unknown error'));
+          return;
+        }
+
+        console.log('User updated successfully');
+      } else {
+        // CREATE new user via backend API
+        if (!newUsername || !newPassword || !newUserRole) {
+          alert('Please fill in all required fields: Username, Password, and Role');
+          return;
+        }
+
+        if (newPassword.length < 8) {
+          alert('Password must be at least 8 characters long');
+          return;
+        }
+
+        const response = await fetch('http://localhost:3001/api/users/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            username: newUsername,
+            password: newPassword,
+            role: newUserRole,
+            locations: selectedLocations
+          })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          console.error('Error creating user:', result);
+          alert('Failed to create user: ' + (result.error || 'Unknown error'));
+          return;
+        }
+
+        console.log('User created successfully:', result.user);
+        alert('User created successfully! Username: ' + newUsername);
+      }
+
+      // Refresh users list
+      const { data: usersData } = await supabaseClient.from('users').select('*');
+      setAllUsers(usersData || []);
+
+      setIsUserDialogOpen(false);
+    } catch (error) {
+      console.error('Error saving user:', error);
+      alert('An error occurred: ' + (error as Error).message);
+    } finally {
+      setIsCreatingUser(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!supabaseClient) return;
+    
+    if (!confirm('Are you sure you want to delete this user? This will also remove them from Clerk.')) {
+      return;
+    }
+
+    try {
+      // Call backend API to delete from both Clerk and Supabase
+      const response = await fetch(`http://localhost:3001/api/users/${userId}`, {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('Error deleting user:', result);
+        alert('Failed to delete user: ' + (result.error || 'Unknown error'));
+        return;
+      }
+
+      console.log('User deleted successfully');
+
+      // Refresh users list
+      const { data: usersData } = await supabaseClient.from('users').select('*');
+      setAllUsers(usersData || []);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert('An error occurred: ' + (error as Error).message);
+    }
+  };
+
+  const handleAddLocation = () => {
+    setEditingLocation({ id: 0, name: '', value: '', is_active: true });
+    setIsLocationDialogOpen(true);
+  };
+
+  const handleEditLocation = (location: Location) => {
+    setEditingLocation(location);
+    setIsLocationDialogOpen(true);
+  };
+
+  const handleSaveLocation = async () => {
+    if (editingLocation && supabaseClient) {
+      const locData = {
+        name: editingLocation.name,
+        value: editingLocation.value,
+        is_active: editingLocation.is_active,
+      };
+  
+      let error;
+      if (editingLocation.id === 0) {
+        // Add new
+        const { error: insertError } = await supabaseClient
+          .from('master_locations')
+          .insert(locData);
+        error = insertError;
+      } else {
+        // Update existing
+        const { error: updateError } = await supabaseClient
+          .from('master_locations')
+          .update(locData)
+          .eq('id', editingLocation.id);
+        error = updateError;
+      }
+  
+      if (error) {
+        console.error('Error saving location:', error);
+        return;
+      }
+  
+      // Refresh locations
+      const { data: locationsData } = await supabaseClient
+        .from('master_locations')
+        .select('*');
+  
+      setAllLocations(locationsData?.filter((l: Location) => l.is_active) || []);
+  
+      setIsLocationDialogOpen(false);
+    }
+  };
+
+  const handleDeleteLocation = async (locationId: number) => {
+    if (!supabaseClient) return;
+    
+    const { error } = await supabaseClient
+      .from('master_locations')
+      .delete()
+      .eq('id', locationId);
+  
+    if (error) {
+      console.error('Error deleting location:', error);
+      return;
+    }
+  
+    // Refresh locations
+    const { data: locationsData } = await supabaseClient
+      .from('master_locations')
+      .select('*');
+  
+    setAllLocations(locationsData?.filter((l: Location) => l.is_active) || []);
+  };
+
+  const filteredUsers = useMemo(() =>
+    allUsers.filter((user: User) =>
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      getRoleDisplay(user.role).toLowerCase().includes(searchTerm.toLowerCase())
+    ), [allUsers, searchTerm]
+  );
+
+  const filteredLocations = useMemo(() =>
+    allLocations.filter((location: Location) =>
+      location.name.toLowerCase().includes(searchTerm.toLowerCase())
+    ), [allLocations, searchTerm]
+  );
+
+  const salesData = useMemo(() => getSalesData(timePeriod), [timePeriod, userRole, currentUserLocations]);
+  const purchaseData = useMemo(() => getPurchaseData(timePeriod), [timePeriod, userRole, currentUserLocations]);
+  const totalSales = useMemo(() => salesData.reduce((sum, item) => sum + item.value, 0), [salesData]);
+  const totalPurchases = useMemo(() => purchaseData.reduce((sum, item) => sum + item.value, 0), [purchaseData]);
+
+  const canAccessRestricted = userRole === 'SUPERADMIN_ROLE';
+
+  if (!isLoaded || userRole === null) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center">
+        <div className="text-lg text-green-600">Memuat...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-green-100">
+        <div className="px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+                <Package className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-green-800">Sistem Monitoring</h1>
+                <p className="text-sm text-green-600">Dashboard Operasional</p>
+              </div>
+            </div>
+            <UserButton afterSignOutUrl="/" />
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="p-4 border-green-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-green-600 mb-1">Total Stok</p>
+                <p className="text-2xl font-bold text-green-800">3,090 ton</p>
+              </div>
+              <Package className="w-8 h-8 text-green-600" />
+            </div>
+          </Card>
+          <Card className="p-4 border-green-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-green-600 mb-1">Penjualan ({timePeriod} bulan)</p>
+                <p className="text-2xl font-bold text-green-800">{totalSales} ton</p>
+              </div>
+              <TrendingUp className="w-8 h-8 text-green-600" />
+            </div>
+          </Card>
+          <Card className="p-4 border-green-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-green-600 mb-1">Pembelian ({timePeriod} bulan)</p>
+                <p className="text-2xl font-bold text-green-800">{totalPurchases} ton</p>
+              </div>
+              <TrendingDown className="w-8 h-8 text-green-600" />
+            </div>
+          </Card>
+          <Card className="p-4 border-green-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-green-600 mb-1">Lokasi Aktif</p>
+                <p className="text-2xl font-bold text-green-800">{allLocations.length}</p>
+              </div>
+              <MapPin className="w-8 h-8 text-green-600" />
+            </div>
+          </Card>
+        </div>
+
+        {/* Main Tabs */}
+        <Tabs defaultValue="stocks" className="space-y-4">
+          <div className="overflow-x-auto pb-2">
+            <TabsList className="inline-flex bg-green-100 p-1 rounded-lg min-w-max">
+              <TabsTrigger value="stocks" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
+                Level Stok
+              </TabsTrigger>
+              <TabsTrigger value="sales" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
+                Data Penjualan
+              </TabsTrigger>
+              <TabsTrigger value="purchases" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
+                Data Pembelian
+              </TabsTrigger>
+              {canAccessRestricted && (
+                <>
+                  <TabsTrigger value="users" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
+                    Management User
+                  </TabsTrigger>
+                  <TabsTrigger value="locations" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
+                    Management Lokasi
+                  </TabsTrigger>
+                </>
+              )}
+            </TabsList>
+          </div>
+
+          {/* Stock Levels Tab */}
+          <TabsContent value="stocks" className="space-y-4">
+            <Card className="border-green-200">
+              <div className="p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-2 sm:space-y-0">
+                  <h3 className="text-lg font-semibold text-green-800">Level Stok Saat Ini</h3>
+                  <Select value={viewBy} onValueChange={setViewBy}>
+                    <SelectTrigger className="w-full sm:w-40 border-green-200">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="location">Berdasarkan Lokasi</SelectItem>
+                      <SelectItem value="category">Berdasarkan Kategori</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Stock List */}
+                  <div className="space-y-3">
+                    {stockData.map((item, index) => (
+                      <div key={index} className="p-4 bg-green-50 rounded-lg border border-green-100">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-green-800">{item.name}</h4>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs border-green-300 text-green-700">
+                                {viewBy === "location" ? item.location : item.category}
+                              </Badge>
+                              <Badge className={`text-xs ${getStatusColor(item.status)}`}>
+                                {item.status}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-green-800">{item.quantity} {item.unit}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Stock Chart */}
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={stockData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#dcfce7" />
+                        <XAxis 
+                          dataKey={viewBy === "location" ? "location" : "category"} 
+                          tick={{ fontSize: 12 }}
+                          stroke="#166534"
+                        />
+                        <YAxis tick={{ fontSize: 12 }} stroke="#166534" />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: '#f0fdf4', 
+                            border: '1px solid #bbf7d0',
+                            borderRadius: '8px'
+                          }}
+                        />
+                        <Bar dataKey="quantity" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* Sales Data Tab */}
+          <TabsContent value="sales" className="space-y-4">
+            <Card className="border-green-200">
+              <div className="p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-2 sm:space-y-0">
+                  <h3 className="text-lg font-semibold text-green-800">Analitik Penjualan</h3>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Select value={timePeriod} onValueChange={setTimePeriod}>
+                      <SelectTrigger className="w-full sm:w-32 border-green-200">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 Bulan</SelectItem>
+                        <SelectItem value="2">2 Bulan</SelectItem>
+                        <SelectItem value="3">3 Bulan</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={viewBy} onValueChange={setViewBy}>
+                      <SelectTrigger className="w-full sm:w-40 border-green-200">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="location">Berdasarkan Lokasi</SelectItem>
+                        <SelectItem value="category">Berdasarkan Kategori</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Sales Chart */}
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={salesData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#dcfce7" />
+                        <XAxis 
+                          dataKey="name" 
+                          tick={{ fontSize: 12 }}
+                          stroke="#166534"
+                        />
+                        <YAxis tick={{ fontSize: 12 }} stroke="#166534" />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: '#f0fdf4', 
+                            border: '1px solid #bbf7d0',
+                            borderRadius: '8px'
+                          }}
+                        />
+                        <Bar dataKey="value" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  
+                  {/* Sales Pie Chart */}
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={salesData}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          dataKey="value"
+                          label={({ name, value }) => `${name}: ${value}t`}
+                        >
+                          {salesData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                
+                {/* Sales Summary */}
+                <div className="mt-6 p-4 bg-green-50 rounded-lg">
+                  <p className="text-green-800">
+                    <strong>Total Penjualan ({timePeriod} bulan):</strong> {totalSales} ton
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* Purchase Data Tab */}
+          <TabsContent value="purchases" className="space-y-4">
+            <Card className="border-green-200">
+              <div className="p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-2 sm:space-y-0">
+                  <h3 className="text-lg font-semibold text-green-800">Analitik Pembelian</h3>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Select value={timePeriod} onValueChange={setTimePeriod}>
+                      <SelectTrigger className="w-full sm:w-32 border-green-200">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 Bulan</SelectItem>
+                        <SelectItem value="2">2 Bulan</SelectItem>
+                        <SelectItem value="3">3 Bulan</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={viewBy} onValueChange={setViewBy}>
+                      <SelectTrigger className="w-full sm:w-40 border-green-200">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="location">Berdasarkan Lokasi</SelectItem>
+                        <SelectItem value="category">Berdasarkan Kategori</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Purchase Chart */}
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={purchaseData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#dcfce7" />
+                        <XAxis 
+                          dataKey="name" 
+                          tick={{ fontSize: 12 }}
+                          stroke="#166534"
+                        />
+                        <YAxis tick={{ fontSize: 12 }} stroke="#166534" />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: '#f0fdf4', 
+                            border: '1px solid #bbf7d0',
+                            borderRadius: '8px'
+                          }}
+                        />
+                        <Bar dataKey="value" fill="#15803d" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  
+                  {/* Purchase Distribution */}
+                  <div className="space-y-3">
+                    {purchaseData.map((item, index) => (
+                      <div key={index} className="p-4 bg-green-50 rounded-lg border border-green-100">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <h4 className="font-medium text-green-800">{item.name}</h4>
+                            <Badge variant="outline" className="text-xs border-green-300 text-green-700 mt-1">
+                              {item.category}
+                            </Badge>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-green-800">{item.value} tons</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Purchase Summary */}
+                <div className="mt-6 p-4 bg-green-50 rounded-lg">
+                  <p className="text-green-800">
+                    <strong>Total Pembelian ({timePeriod} bulan):</strong> {totalPurchases} ton
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* User Management Tab */}
+          {canAccessRestricted && (
+            <TabsContent value="users" className="space-y-4">
+              <Card className="border-green-200">
+                <div className="p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-2 sm:space-y-0">
+                    <h3 className="text-lg font-semibold text-green-800">Management User</h3>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Input 
+                          placeholder="Cari user..." 
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10 border-green-200"
+                        />
+                      </div>
+                      <Button onClick={handleAddUser} className="bg-green-600 hover:bg-green-700 text-white">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Tambah User
+                      </Button>
+                      <Button onClick={() => {
+                        const fetchData = async () => {
+                          if (!supabaseClient) return;
+                          const { data: usersData } = await supabaseClient.from('users').select('*');
+                          setAllUsers(usersData || []);
+                        };
+                        fetchData();
+                      }} className="bg-green-600 hover:bg-green-700 text-white">
+                        <Users className="w-4 h-4 mr-2" />
+                        Refresh Users
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Mobile Cards View */}
+                  <div className="block sm:hidden space-y-3">
+                    {filteredUsers.map((user: User) => (
+                      <Card key={user.id} className="p-4 border-green-100">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-medium text-green-800">{user.name}</h4>
+                            </div>
+                            <div className="flex space-x-1">
+                              <Button size="sm" variant="outline" onClick={() => handleEditUser(user)}>
+                                <Edit className="w-3 h-3" />
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => handleDeleteUser(user.id)} className="text-red-600 hover:text-red-700">
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge className={`text-xs ${getRoleColor(user.role)}`}>
+                              {getRoleDisplay(user.role)}
+                            </Badge>
+                            {user.locations && user.locations.map((loc: string) => (
+                              <Badge key={loc} variant="outline" className="text-xs border-green-300 text-green-700">
+                                {loc}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+
+                  {/* Desktop Table View */}
+                  <div className="hidden sm:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nama</TableHead>
+                          <TableHead>Role</TableHead>
+                          <TableHead>Lokasi</TableHead>
+                          <TableHead>Aksi</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredUsers.map((user: User) => (
+                          <TableRow key={user.id}>
+                            <TableCell className="font-medium">{user.name}</TableCell>
+                            <TableCell>
+                              <Badge className={`text-xs ${getRoleColor(user.role)}`}>
+                                {getRoleDisplay(user.role)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {user.locations && user.locations.map((loc: string) => (
+                                <Badge key={loc} variant="outline" className="text-xs border-green-300 text-green-700 mr-1">
+                                  {loc}
+                                </Badge>
+                              ))}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end space-x-1">
+                                <Button size="sm" variant="outline" onClick={() => handleEditUser(user)}>
+                                  <Edit className="w-3 h-3" />
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => handleDeleteUser(user.id)} className="text-red-600 hover:text-red-700">
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+
+                {/* User Dialog */}
+                <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>{editingUser ? 'Edit User' : 'Tambah User Baru'}</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      {editingUser ? (
+                        <>
+                          <div className="space-y-2">
+                            <Label>Username</Label>
+                            <Input value={editingUser.name} disabled />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="role">Role</Label>
+                            <Select value={editingUser.role} onValueChange={(value: string) => setEditingUser({ ...editingUser, role: value })}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Pilih role" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="SUPERADMIN_ROLE">Super Admin</SelectItem>
+                                <SelectItem value="BOD_ROLE">BOD</SelectItem>
+                                <SelectItem value="SALES_MANAGER_ROLE">Sales Manager</SelectItem>
+                                <SelectItem value="SALES_SUPERVISOR_ROLE">Sales Supervisor</SelectItem>
+                                <SelectItem value="AUDITOR_ROLE">Auditor</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor="username">Username *</Label>
+                            <Input 
+                              id="username"
+                              placeholder="john_doe"
+                              value={newUsername}
+                              onChange={(e) => setNewUsername(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="password">Password *</Label>
+                            <Input 
+                              id="password"
+                              type="password"
+                              placeholder="Minimum 8 characters"
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="newUserRole">Role *</Label>
+                            <Select value={newUserRole} onValueChange={setNewUserRole}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Pilih role" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="SUPERADMIN_ROLE">Super Admin</SelectItem>
+                                <SelectItem value="BOD_ROLE">BOD</SelectItem>
+                                <SelectItem value="SALES_MANAGER_ROLE">Sales Manager</SelectItem>
+                                <SelectItem value="SALES_SUPERVISOR_ROLE">Sales Supervisor</SelectItem>
+                                <SelectItem value="AUDITOR_ROLE">Auditor</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </>
+                      )}
+                      <div className="space-y-2">
+                        <Label>Lokasi</Label>
+                        <div className="space-y-2">
+                          {allLocations.map((location: any) => (
+                            <div key={location.name} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`location-${location.name}`}
+                                checked={selectedLocations.includes(location.name)}
+                                onCheckedChange={(checked: boolean) => {
+                                  if (checked) {
+                                    setSelectedLocations(prev => [...prev, location.name]);
+                                  } else {
+                                    setSelectedLocations(prev => prev.filter(l => l !== location.name));
+                                  }
+                                }}
+                              />
+                              <Label htmlFor={`location-${location.name}`}>
+                                {location.name}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex justify-end space-x-2 pt-4">
+                        <Button variant="outline" onClick={() => setIsUserDialogOpen(false)} disabled={isCreatingUser}>
+                          Batal
+                        </Button>
+                        <Button className="bg-green-600 hover:bg-green-700" onClick={handleSaveUser} disabled={isCreatingUser}>
+                          {isCreatingUser ? 'Saving...' : 'Simpan'}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </Card>
+            </TabsContent>
+          )}
+
+          {/* Location Management Tab */}
+          {canAccessRestricted && (
+            <TabsContent value="locations" className="space-y-4">
+              <Card className="border-green-200">
+                <div className="p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-2 sm:space-y-0">
+                    <h3 className="text-lg font-semibold text-green-800">Management Lokasi</h3>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button onClick={handleAddLocation} className="bg-green-600 hover:bg-green-700 text-white">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Tambah Lokasi
+                      </Button>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Input
+                          placeholder="Cari lokasi..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10 border-green-200"
+                        />
+                      </div>
+                      <Button onClick={() => {
+                        const fetchData = async () => {
+                          if (!supabaseClient) return;
+                          const { data: locationsData } = await supabaseClient
+                            .from('master_locations')
+                            .select('*');
+
+                          setAllLocations(locationsData?.filter((l: Location) => l.is_active) || []);
+                        };
+                        fetchData();
+                      }} className="bg-green-600 hover:bg-green-700 text-white">
+                        <Users className="w-4 h-4 mr-2" />
+                        Refresh Locations
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Mobile Cards View */}
+                  <div className="block lg:hidden space-y-3">
+                    {filteredLocations.map((location: Location) => (
+                      <Card key={location.id} className="p-4 border-green-100">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-green-800">{location.name}</h4>
+                            </div>
+                            <div className="flex space-x-1 ml-2">
+                              <Button size="sm" variant="outline" onClick={() => handleEditLocation(location)}>
+                                <Edit className="w-3 h-3" />
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => handleDeleteLocation(location.id)} className="text-red-600 hover:text-red-700">
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+
+                  {/* Desktop Table View */}
+                  <div className="hidden lg:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nama Lokasi</TableHead>
+                          <TableHead>Value</TableHead>
+                          <TableHead>Aksi</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredLocations.map((location: Location) => (
+                          <TableRow key={location.id}>
+                            <TableCell className="font-medium">{location.name}</TableCell>
+                            <TableCell>{location.value}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end space-x-1">
+                                <Button size="sm" variant="outline" onClick={() => handleEditLocation(location)}>
+                                  <Edit className="w-3 h-3" />
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => handleDeleteLocation(location.id)} className="text-red-600 hover:text-red-700">
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+
+                {/* Location Dialog */}
+                <Dialog open={isLocationDialogOpen} onOpenChange={setIsLocationDialogOpen}>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>{editingLocation ? 'Edit Lokasi' : 'Tambah Lokasi Baru'}</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Nama Lokasi</Label>
+                        <Input id="name" value={editingLocation?.name || ''} onChange={(e) => setEditingLocation({ ...editingLocation!, name: e.target.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="value">Value</Label>
+                        <Input id="value" value={editingLocation?.value || ''} onChange={(e) => setEditingLocation({ ...editingLocation!, value: e.target.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="is_active">Aktif</Label>
+                        <Checkbox
+                          id="is_active"
+                          checked={editingLocation?.is_active || false}
+                          onCheckedChange={(checked: boolean) => setEditingLocation({ ...editingLocation!, is_active: checked })}
+                        />
+                      </div>
+                      <div className="flex justify-end space-x-2 pt-4">
+                        <Button variant="outline" onClick={() => setIsLocationDialogOpen(false)}>
+                          Batal
+                        </Button>
+                        <Button className="bg-green-600 hover:bg-green-700" onClick={handleSaveLocation}>
+                          Simpan
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </Card>
+            </TabsContent>
+          )}
+        </Tabs>
+      </main>
+    </div>
+  );
+}
