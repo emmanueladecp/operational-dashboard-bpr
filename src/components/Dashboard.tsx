@@ -277,29 +277,25 @@ export default function Dashboard() {
 
     try {
       if (editingUser) {
-        // UPDATE existing user via backend API to sync with Clerk metadata
-        const response = await fetch(`http://localhost:3001/api/users/${editingUser.id}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+        // UPDATE existing user via Edge Function
+        const { data, error } = await supabaseClient.functions.invoke('create-user', {
+          body: {
+            action: 'update-user',
+            clerkId: editingUser.clerk_id,
             role: editingUser.role,
             locations: selectedLocations
-          })
+          }
         });
 
-        const result = await response.json();
-
-        if (!response.ok) {
-          console.error('Error updating user:', result);
-          alert('Failed to update user: ' + (result.error || 'Unknown error'));
+        if (error) {
+          console.error('Error updating user:', error);
+          alert('Failed to update user: ' + (error.message || 'Unknown error'));
           return;
         }
 
         console.log('User updated successfully');
       } else {
-        // CREATE new user via backend API
+        // CREATE new user via Edge Function
         if (!newUsername || !newPassword || !newUserRole) {
           alert('Please fill in all required fields: Username, Password, and Role');
           return;
@@ -310,28 +306,23 @@ export default function Dashboard() {
           return;
         }
 
-        const response = await fetch('http://localhost:3001/api/users/create', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+        const { data, error } = await supabaseClient.functions.invoke('create-user', {
+          body: {
+            action: 'create-user',
             username: newUsername,
             password: newPassword,
             role: newUserRole,
             locations: selectedLocations
-          })
+          }
         });
 
-        const result = await response.json();
-
-        if (!response.ok) {
-          console.error('Error creating user:', result);
-          alert('Failed to create user: ' + (result.error || 'Unknown error'));
+        if (error) {
+          console.error('Error creating user:', error);
+          alert('Failed to create user: ' + (error.message || 'Unknown error'));
           return;
         }
 
-        console.log('User created successfully:', result.user);
+        console.log('User created successfully:', data);
         alert('User created successfully! Username: ' + newUsername);
       }
 
@@ -350,22 +341,30 @@ export default function Dashboard() {
 
   const handleDeleteUser = async (userId: string) => {
     if (!supabaseClient) return;
-    
+
     if (!confirm('Are you sure you want to delete this user? This will also remove them from Clerk.')) {
       return;
     }
 
     try {
-      // Call backend API to delete from both Clerk and Supabase
-      const response = await fetch(`http://localhost:3001/api/users/${userId}`, {
-        method: 'DELETE',
+      // Get the user's clerk_id first
+      const user = allUsers.find(u => u.id === userId);
+      if (!user || !user.clerk_id) {
+        alert('User not found or missing Clerk ID');
+        return;
+      }
+
+      // Call Edge Function to delete from both Clerk and Supabase
+      const { data, error } = await supabaseClient.functions.invoke('create-user', {
+        body: {
+          action: 'delete-user',
+          clerkId: user.clerk_id
+        }
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        console.error('Error deleting user:', result);
-        alert('Failed to delete user: ' + (result.error || 'Unknown error'));
+      if (error) {
+        console.error('Error deleting user:', error);
+        alert('Failed to delete user: ' + (error.message || 'Unknown error'));
         return;
       }
 
@@ -918,7 +917,7 @@ export default function Dashboard() {
 
                 {/* User Dialog */}
                 <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
-                  <DialogContent className="max-w-md">
+                  <DialogContent className="max-w-md max-h-[60vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>{editingUser ? 'Edit User' : 'Tambah User Baru'}</DialogTitle>
                     </DialogHeader>
@@ -985,9 +984,9 @@ export default function Dashboard() {
                       )}
                       <div className="space-y-2">
                         <Label>Lokasi</Label>
-                        <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
                           {allLocations.map((location: any) => (
-                            <div key={location.name} className="flex items-center space-x-2">
+                            <div key={location.name} className="flex items-center space-x-2 min-w-0">
                               <Checkbox
                                 id={`location-${location.name}`}
                                 checked={selectedLocations.includes(location.name)}
@@ -999,7 +998,7 @@ export default function Dashboard() {
                                   }
                                 }}
                               />
-                              <Label htmlFor={`location-${location.name}`}>
+                              <Label htmlFor={`location-${location.name}`} className="text-xs leading-tight truncate">
                                 {location.name}
                               </Label>
                             </div>
@@ -1116,7 +1115,7 @@ export default function Dashboard() {
 
                 {/* Location Dialog */}
                 <Dialog open={isLocationDialogOpen} onOpenChange={setIsLocationDialogOpen}>
-                  <DialogContent className="max-w-md">
+                  <DialogContent className="max-w-md max-h-[60vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>{editingLocation ? 'Edit Lokasi' : 'Tambah Lokasi Baru'}</DialogTitle>
                     </DialogHeader>

@@ -7,17 +7,16 @@ This guide explains how to set up the complete user creation system that creates
 
 ### Flow
 1. SUPERADMIN clicks "Tambah User" button in Dashboard
-2. Form collects: Email, First Name, Last Name, Role, and Locations
-3. Frontend sends request to Backend API (Node.js/Express)
-4. Backend creates user in Clerk first
-5. Backend creates matching record in Supabase with `clerk_id`
-6. User receives invitation email from Clerk
-7. User signs up via Clerk invitation link
-8. On first login, user data syncs and RLS policies apply based on role
+2. Form collects: Username, Password, Role, and Locations
+3. Frontend calls Supabase Edge Function (secure serverless function)
+4. Edge Function creates user in Clerk first (with metadata)
+5. Edge Function creates matching record in Supabase with `clerk_id`
+6. User can immediately login with username/password (no email required)
+7. On login, JWT contains role/locations for RLS policies
 
 ### Components
 - **Frontend**: Dashboard.tsx (React component with user form)
-- **Backend**: server.js (Express API for Clerk + Supabase integration)
+- **Backend**: Supabase Edge Function (serverless, secure, no server management)
 - **Database**: Supabase with RLS policies
 - **Auth**: Clerk for authentication
 
@@ -27,55 +26,67 @@ This guide explains how to set up the complete user creation system that creates
 
 ### 1. Environment Variables
 
-Update `.env.local` with the following keys:
+Update `.env.local` with the following keys (if not already set):
 
 ```env
 # Frontend (existing)
 VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# Backend (NEW - add these)
-CLERK_SECRET_KEY=your_clerk_secret_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-PORT=3001
 ```
 
 #### Where to find these keys:
 
-**CLERK_SECRET_KEY**:
+**VITE_CLERK_PUBLISHABLE_KEY**:
+1. Go to https://dashboard.clerk.com
+2. Select your application
+3. Go to **API Keys** in the sidebar
+4. Copy the **Publishable Key** (starts with `pk_test_` or `pk_live_`)
+
+**VITE_SUPABASE_URL** and **VITE_SUPABASE_ANON_KEY**:
+1. Go to https://app.supabase.com
+2. Select your project: `idniillfrvnppeerzxol`
+3. Go to **Settings** → **API**
+4. Copy the **URL** and **anon/public** key
+
+---
+
+### 2. Deploy the Edge Function
+
+Deploy the Supabase Edge Function that handles secure Clerk integration:
+
+```bash
+# Install Supabase CLI if not already installed (see https://github.com/supabase/cli#install-the-cli)
+# For example, using curl:
+# curl -sSfL https://supabase.com/install.sh | sh
+
+# Login to Supabase
+supabase login
+
+# Link your project
+supabase link --project-ref idniillfrvnppeerzxol
+
+# Set the Clerk secret key as a secret
+supabase secrets set CLERK_SECRET_KEY=sk_test_your_clerk_secret_key_here
+
+# Deploy the Edge Function
+supabase functions deploy create-user
+```
+
+**Where to find CLERK_SECRET_KEY**:
 1. Go to https://dashboard.clerk.com
 2. Select your application
 3. Go to **API Keys** in the sidebar
 4. Copy the **Secret Key** (starts with `sk_test_` or `sk_live_`)
 
-**SUPABASE_SERVICE_ROLE_KEY**:
-1. Go to https://app.supabase.com
-2. Select your project: `idniillfrvnppeerzxol`
-3. Go to **Settings** → **API**
-4. Copy the **service_role** key (⚠️ KEEP THIS SECRET - has admin access)
-
----
-
-### 2. Start the Backend Server
-
-Open a **separate terminal** and run:
-
-```bash
-npm run server
-```
-
 You should see:
 ```
-🚀 Backend server running on http://localhost:3001
-✅ Health check: http://localhost:3001/api/health
+Deployed Function create-user on project idniillfrvnppeerzxol
 ```
-
-**Important**: Keep this terminal running while using the application.
 
 ---
 
-### 3. Start the Frontend (in another terminal)
+### 3. Start the Frontend
 
 ```bash
 npm run dev
@@ -143,12 +154,13 @@ Your app will run on `http://localhost:3000`
 
 ## API Endpoints
 
-### POST `/api/users/create`
+### POST /create-user (Supabase Edge Function)
 Creates a new user in both Clerk and Supabase.
 
 **Request Body**:
 ```json
 {
+  "action": "create-user",
   "username": "john_doe",
   "password": "SecurePassword123",
   "role": "SALES_MANAGER_ROLE",
@@ -164,7 +176,6 @@ Creates a new user in both Clerk and Supabase.
     "id": "uuid",
     "clerk_id": "user_xxx",
     "name": "john_doe",
-    "username": "john_doe",
     "role": "SALES_MANAGER_ROLE",
     "locations": ["Jakarta", "Surabaya"]
   }
@@ -173,8 +184,39 @@ Creates a new user in both Clerk and Supabase.
 
 ---
 
-### DELETE `/api/users/:userId`
+### PATCH /update-user (Supabase Edge Function)
+Updates user role/locations in both Clerk and Supabase.
+
+**Request Body**:
+```json
+{
+  "action": "update-user",
+  "clerkId": "user_xxx",
+  "role": "SALES_SUPERVISOR_ROLE",
+  "locations": ["Bandung"]
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "message": "User updated successfully"
+}
+```
+
+---
+
+### DELETE /delete-user (Supabase Edge Function)
 Deletes a user from both Clerk and Supabase.
+
+**Request Body**:
+```json
+{
+  "action": "delete-user",
+  "clerkId": "user_xxx"
+}
+```
 
 **Response** (200 OK):
 ```json
@@ -186,36 +228,23 @@ Deletes a user from both Clerk and Supabase.
 
 ---
 
-### GET `/api/health`
-Health check endpoint to verify backend is running.
-
-**Response** (200 OK):
-```json
-{
-  "status": "ok",
-  "message": "Server is running"
-}
-```
-
----
-
 ## Troubleshooting
 
-### Backend Server Issues
+### Edge Function Issues
 
-**Problem**: Server won't start
+**Problem**: Deployment fails
 ```
-Error: Cannot find module 'express'
+Error: supabase: command not found
 ```
-**Solution**: Run `npm install` to install all dependencies
+**Solution**: Install Supabase CLI using one of the supported methods from https://github.com/supabase/cli#install-the-cli
 
 ---
 
-**Problem**: Missing environment variables
+**Problem**: "Failed to link project"
 ```
-Error: CLERK_SECRET_KEY is not defined
+Error: Could not find project
 ```
-**Solution**: Make sure `.env.local` has all required keys (see Step 1)
+**Solution**: Verify project ref: `idniillfrvnppeerzxol` and you're logged in
 
 ---
 
@@ -242,18 +271,18 @@ Error: CLERK_SECRET_KEY is not defined
 
 ---
 
-### CORS Errors
+### Edge Function Errors
 
-**Problem**: "Access-Control-Allow-Origin" error in browser console
-**Solution**: Backend is not running. Start it with `npm run server`
+**Problem**: "Failed to create user in Clerk"
+**Solution**: Check CLERK_SECRET_KEY is correct and has user creation permissions
 
 ---
 
-**Problem**: "Failed to fetch" or "Network error"
-**Solution**: 
-- Verify backend is running on port 3001
-- Check if another app is using port 3001
-- Try changing PORT in `.env.local` and restart server
+**Problem**: "Failed to create user in database"
+**Solution**:
+- Verify RLS policies allow SUPERADMIN inserts (run `supabase_rls_policies_fixed.sql`)
+- Check Supabase service role key is correct
+- Check function logs: `supabase functions logs create-user`
 
 ---
 
@@ -263,13 +292,12 @@ Error: CLERK_SECRET_KEY is not defined
 
 1. **Never commit `.env.local`** - It's already in `.gitignore`
 2. **Service Role Key** has ADMIN access - keep it secret
-3. **Clerk Secret Key** can create/delete users - keep it secret
-4. Backend should be deployed separately with proper security:
-   - Use environment variables (not `.env.local` in production)
-   - Add authentication middleware to API endpoints
-   - Use HTTPS in production
-   - Implement rate limiting
-   - Add request validation
+3. **Clerk Secret Key** can create/delete users - keep it secret (set via `supabase secrets`)
+4. Edge Functions provide built-in security:
+    - Run in isolated serverless environment
+    - Automatic HTTPS and CORS handling
+    - Built-in request validation and rate limiting
+    - No need for separate server deployment
 
 ---
 
@@ -277,23 +305,24 @@ Error: CLERK_SECRET_KEY is not defined
 
 For production, you should:
 
-1. **Deploy Backend Separately**:
-   - Use Vercel Serverless Functions, AWS Lambda, or dedicated server
-   - Set environment variables in deployment platform
-   - Enable HTTPS
+1. **Deploy Edge Function**:
+    - Use production Clerk secret key (`sk_live_` instead of `sk_test_`)
+    - Set secrets in production Supabase dashboard (not CLI)
+    - Function auto-scales with demand
 
-2. **Update Frontend API URL**:
-   - Change `http://localhost:3001` to your production backend URL
-   - Use environment variable for API URL
+2. **No Frontend Changes Needed**:
+    - Edge Functions use same Supabase client as frontend
+    - No API URL changes required
+    - Automatic HTTPS and security
 
-3. **Secure API Endpoints**:
-   - Add JWT verification using Clerk's middleware
-   - Validate user role before allowing user creation
-   - Add rate limiting
+3. **Built-in Security**:
+    - RLS policies enforce SUPERADMIN-only access
+    - Edge Functions run server-side with proper isolation
+    - Input validation prevents injection attacks
 
 4. **User Login**:
-   - Users can immediately login with their username and password
-   - No email verification or invitation process required
+    - Users can immediately login with their username and password
+    - No email verification or invitation process required
 
 ---
 
@@ -322,13 +351,13 @@ For production, you should:
 ## Files Modified/Created
 
 **New Files**:
-- `server.js` - Backend API server
-- `USER_CREATION_SETUP.md` - This documentation
+- `supabase/functions/create-user/index.ts` - Edge Function for secure Clerk integration
+- `EDGE_FUNCTION_SETUP.md` - Edge Function deployment guide
+- Updated `USER_CREATION_SETUP.md` - This documentation
 
 **Modified Files**:
-- `package.json` - Added server script and dependencies
-- `.env.local` - Added backend environment variables
-- `src/components/Dashboard.tsx` - Added user creation form and logic
+- `src/components/Dashboard.tsx` - Updated to use Edge Function instead of server.js API
+- `CLERK_SUPABASE_INTEGRATION.md` - Updated to reflect Edge Function flow
 
 ---
 

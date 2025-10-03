@@ -58,83 +58,86 @@ CREATE TABLE users (
 
 When a SUPERADMIN creates a new user:
 
-1. **POST `/api/users/create`** called with:
-   ```json
-   {
-     "username": "john_doe",
-     "password": "SecurePassword123",
-     "role": "SALES_MANAGER_ROLE",
-     "locations": ["Jakarta", "Surabaya"]
-   }
-   ```
+1. **Frontend calls Supabase Edge Function** with:
+    ```json
+    {
+      "action": "create-user",
+      "username": "john_doe",
+      "password": "SecurePassword123",
+      "role": "SALES_MANAGER_ROLE",
+      "locations": ["Jakarta", "Surabaya"]
+    }
+    ```
 
-2. **Backend creates user in Clerk** with publicMetadata:
-   ```javascript
-   const clerkUser = await clerkClient.users.createUser({
-     username: username,
-     password: password,
-     publicMetadata: {
-       role: role,
-       locations: locations
-     }
-   });
-   ```
+2. **Edge Function creates user in Clerk** with publicMetadata:
+    ```typescript
+    const clerkUser = await clerk.users.createUser({
+      username: username,
+      password: password,
+      publicMetadata: {
+        role: role,
+        locations: locations
+      }
+    });
+    ```
 
-3. **Backend creates matching record in Supabase**:
-   ```javascript
-   await supabaseAdmin.from('users').insert({
-     clerk_id: clerkUser.id,
-     name: username,
-     role: role,
-     locations: locations
-   });
-   ```
+3. **Edge Function creates matching record in Supabase**:
+    ```typescript
+    await supabaseAdmin.from('users').insert({
+      clerk_id: clerkUser.id,
+      name: username,
+      role: role,
+      locations: locations
+    });
+    ```
 
 4. **User can immediately login**
-   - No email verification needed
-   - Username + password authentication
+    - No email verification needed
+    - Username + password authentication
 
 5. **On login, JWT token contains**:
-   ```json
-   {
-     "sub": "user_xxx",
-     "role": "SALES_MANAGER_ROLE",
-     "locations": ["Jakarta", "Surabaya"]
-   }
-   ```
+    ```json
+    {
+      "sub": "user_xxx",
+      "role": "SALES_MANAGER_ROLE",
+      "locations": ["Jakarta", "Surabaya"]
+    }
+    ```
 
 ## User Update Flow
 
 When a SUPERADMIN updates user role or locations:
 
-1. **PATCH `/api/users/:userId`** called with:
-   ```json
-   {
-     "role": "SALES_SUPERVISOR_ROLE",
-     "locations": ["Bandung"]
-   }
-   ```
+1. **Frontend calls Edge Function** with:
+    ```json
+    {
+      "action": "update-user",
+      "clerkId": "user_xxx",
+      "role": "SALES_SUPERVISOR_ROLE",
+      "locations": ["Bandung"]
+    }
+    ```
 
-2. **Backend updates Clerk metadata**:
-   ```javascript
-   await clerkClient.users.updateUserMetadata(clerkId, {
-     publicMetadata: {
-       role: role,
-       locations: locations
-     }
-   });
-   ```
+2. **Edge Function updates Clerk metadata**:
+    ```typescript
+    await clerk.users.updateUserMetadata(clerkId, {
+      publicMetadata: {
+        role: role,
+        locations: locations
+      }
+    });
+    ```
 
-3. **Backend updates Supabase record**:
-   ```javascript
-   await supabaseAdmin.from('users')
-     .update({ role, locations })
-     .eq('id', userId);
-   ```
+3. **Edge Function updates Supabase record**:
+    ```typescript
+    await supabaseAdmin.from('users')
+      .update({ role, locations })
+      .eq('clerk_id', clerkId);
+    ```
 
 4. **Important**: Metadata changes reflect in JWT after next token refresh
-   - Frontend may need to refresh session to see changes
-   - Consider adding a "refresh session" button after updates
+    - Frontend may need to refresh session to see changes
+    - Consider adding a "refresh session" button after updates
 
 ## RLS Policies
 
@@ -195,28 +198,31 @@ const supabaseClient = useMemo(() => {
 
 ## API Endpoints
 
-### POST `/api/users/create`
+### POST /create-user (Supabase Edge Function)
 Creates user in both Clerk (with metadata) and Supabase.
 
-**Required**: `username`, `password`, `role`  
+**Required**: `username`, `password`, `role`
 **Optional**: `locations`
 
-### PATCH `/api/users/:userId`
+### PATCH /update-user (Supabase Edge Function)
 Updates user role/locations in both Clerk metadata and Supabase.
 
-**Required**: `role` or `locations`
+**Required**: `clerkId` and at least one of `role` or `locations`
 
-### DELETE `/api/users/:userId`
+### DELETE /delete-user (Supabase Edge Function)
 Deletes user from both Clerk and Supabase.
+
+**Required**: `clerkId`
 
 ## Benefits of This Pattern
 
-✅ **Single Source of Truth**: Clerk manages authentication, metadata in JWT  
-✅ **Automatic Sync**: JWT automatically includes role/locations  
-✅ **Security**: RLS policies use JWT claims directly  
-✅ **No Manual Token Handling**: Clerk SDK handles token refresh  
-✅ **Scalability**: Metadata in JWT reduces database queries  
-✅ **Official Pattern**: Follows Clerk + Supabase best practices  
+✅ **Single Source of Truth**: Clerk manages authentication, metadata in JWT
+✅ **Automatic Sync**: JWT automatically includes role/locations
+✅ **Security**: RLS policies use JWT claims directly
+✅ **No Manual Token Handling**: Clerk SDK handles token refresh
+✅ **Scalability**: Metadata in JWT reduces database queries
+✅ **Serverless**: Edge Functions provide secure backend without maintaining servers
+✅ **Official Pattern**: Follows Clerk + Supabase best practices
 
 ## Important Considerations
 
