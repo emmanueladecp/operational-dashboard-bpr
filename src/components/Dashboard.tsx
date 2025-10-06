@@ -23,7 +23,7 @@ interface User {
   clerk_id: string;
   name: string;
   role: string;
-  locations?: string[];
+  locations?: number[];
 }
 
 interface Location {
@@ -38,7 +38,7 @@ export default function Dashboard() {
   const { user, isLoaded } = useUser();
   const { signOut: clerkSignOut } = useAuth();
   const [userRole, setUserRole] = useState<'NO_ROLE' | 'SUPERADMIN_ROLE' | 'BOD_ROLE' | 'SALES_MANAGER_ROLE' | 'SALES_SUPERVISOR_ROLE' | 'AUDITOR_ROLE' | null>(null);
-  const [currentUserLocations, setCurrentUserLocations] = useState<string[]>([]);
+  const [currentUserLocations, setCurrentUserLocations] = useState<number[]>([]);
   const [allLocations, setAllLocations] = useState<Location[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [timePeriod, setTimePeriod] = useState("1");
@@ -48,7 +48,7 @@ export default function Dashboard() {
   const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
-  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const [selectedLocations, setSelectedLocations] = useState<number[]>([]);
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newUserRole, setNewUserRole] = useState('');
@@ -125,7 +125,10 @@ export default function Dashboard() {
 
         if (data) {
           setUserRole(data.role);
-          setCurrentUserLocations(data.locations || []);
+          const userLocations = (data.locations || []).map((loc: any) => Number(loc)); // Convert string IDs to numbers
+          setCurrentUserLocations(userLocations);
+          console.log('Current User Role:', data.role);
+          console.log('Current User Locations (original):', data.locations, 'Converted:', userLocations);
         }
       };
 
@@ -147,9 +150,16 @@ export default function Dashboard() {
           return;
         }
 
-        setAllUsers(usersData || []);
+        // Convert string location IDs to numbers for all users
+        const processedUsers = (usersData || []).map(user => ({
+          ...user,
+          locations: user.locations ? user.locations.map((loc: any) => Number(loc)) : []
+        }));
+        setAllUsers(processedUsers);
+        console.log('Users fetched:', processedUsers.length, 'users');
+        console.log('User location data:', processedUsers.map(u => ({ name: u.name, locations: u.locations, locationTypes: u.locations?.map((l: any) => typeof l) })));
 
-        // Fetch active locations
+        // Fetch all locations (including inactive ones for proper display)
         const { data: locationsData, error: locationsError } = await supabaseClient
           .from('master_locations')
           .select('*');
@@ -159,12 +169,43 @@ export default function Dashboard() {
           return;
         }
 
-        setAllLocations(locationsData?.filter((l: Location) => l.is_active) || []);
+        // Store all locations for proper lookup, but filter active ones for selection
+        const allLocationsData = locationsData || [];
+        setAllLocations(allLocationsData);
+
+        // Debug: Log location IDs to help identify issues
+        console.log('All locations fetched:', allLocationsData.map(l => ({ id: l.id, name: l.name, is_active: l.is_active })));
+        console.log('Location 1000007 exists:', allLocationsData.some(l => l.id === 1000007));
+        const location1000007 = allLocationsData.find(l => l.id === 1000007);
+        console.log('Location 1000007 details:', location1000007);
       };
 
       fetchData();
     }
   }, [userRole, supabaseClient]);
+
+  // Separate effect to fetch locations when supabaseClient is available (for proper lookup)
+  useEffect(() => {
+    if (supabaseClient && allLocations.length === 0) {
+      const fetchLocations = async () => {
+        console.log('Fetching locations for lookup...');
+        const { data: locationsData, error: locationsError } = await supabaseClient
+          .from('master_locations')
+          .select('*');
+
+        if (locationsError) {
+          console.error('Error fetching locations for lookup:', locationsError);
+          return;
+        }
+
+        const allLocationsData = locationsData || [];
+        setAllLocations(allLocationsData);
+        console.log('Locations for lookup fetched:', allLocationsData.length, 'locations');
+      };
+
+      fetchLocations();
+    }
+  }, [supabaseClient, allLocations.length]);
 
   // Fetch stock data from Supabase
   useEffect(() => {
@@ -203,7 +244,8 @@ export default function Dashboard() {
 
     // Filter for sales roles based on their assigned locations
     if (userRole === 'SALES_MANAGER_ROLE' || userRole === 'SALES_SUPERVISOR_ROLE') {
-      filteredData = stockData.filter(item => currentUserLocations.includes(item.location));
+      const currentUserLocationNames = getCurrentUserLocationNames();
+      filteredData = stockData.filter(item => currentUserLocationNames.includes(item.location));
     }
 
     // Transform data for display
@@ -233,7 +275,8 @@ export default function Dashboard() {
 
     // Filter for sales roles
     if (userRole === 'SALES_MANAGER_ROLE' || userRole === 'SALES_SUPERVISOR_ROLE') {
-      data = data.filter(item => currentUserLocations.includes(item.name));
+      const currentUserLocationNames = getCurrentUserLocationNames();
+      data = data.filter(item => currentUserLocationNames.includes(item.name));
     }
 
     return data;
@@ -283,6 +326,40 @@ export default function Dashboard() {
     }
   };
 
+  const getLocationNamesFromIds = (locationIds: number[]) => {
+    // If no locations are loaded yet, return placeholder
+    if (allLocations.length === 0) {
+      console.log("No locations loaded yet, returning placeholder for IDs:", locationIds);
+      return locationIds.map(id => `Loading... (${id})`);
+    }
+
+    console.log("ALL LOCATION ", allLocations.length, "locations:", allLocations.map(l => ({ id: l.id, name: l.name })));
+    console.log("Looking for location IDs:", locationIds);
+
+    return locationIds.map(id => {
+      // Ensure ID is a number for comparison
+      const numericId = Number(id);
+      console.log(`Looking for location ID: ${numericId} (original: ${id}, type: ${typeof id})`);
+
+      // Try both numeric and string comparison in case of data type issues
+      const location = allLocations.find(loc => loc.id === numericId) ||
+                      allLocations.find(loc => loc.id === id) ||
+                      allLocations.find(loc => String(loc.id) === String(id));
+
+      if (location) {
+        console.log(`Found location: ${location.name} (ID: ${location.id})`);
+        // Show if location is inactive
+        return location.is_active ? location.name : `${location.name} (Inactive)`;
+      }
+      console.warn(`Location ID ${numericId} not found in locations list. Available locations:`, allLocations.map(l => ({ id: l.id, name: l.name, is_active: l.is_active })));
+      return `Unknown Location (${numericId})`;
+    });
+  };
+
+  const getCurrentUserLocationNames = () => {
+    return getLocationNamesFromIds(currentUserLocations);
+  };
+
   const handleAddUser = () => {
     setEditingUser(null);
     setNewUsername('');
@@ -294,6 +371,7 @@ export default function Dashboard() {
 
   const handleEditUser = (user: User) => {
     setEditingUser(user);
+    // user.locations now contains IDs directly, no conversion needed
     setSelectedLocations(user.locations || []);
     setIsUserDialogOpen(true);
   };
@@ -356,7 +434,12 @@ export default function Dashboard() {
 
       // Refresh users list
       const { data: usersData } = await supabaseClient.from('users').select('*');
-      setAllUsers(usersData || []);
+      // Convert string location IDs to numbers
+      const processedUsers = (usersData || []).map(user => ({
+        ...user,
+        locations: user.locations ? user.locations.map((loc: any) => Number(loc)) : []
+      }));
+      setAllUsers(processedUsers);
 
       setIsUserDialogOpen(false);
     } catch (error) {
@@ -399,7 +482,12 @@ export default function Dashboard() {
 
       // Refresh users list
       const { data: usersData } = await supabaseClient.from('users').select('*');
-      setAllUsers(usersData || []);
+      // Convert string location IDs to numbers
+      const processedUsers = (usersData || []).map(user => ({
+        ...user,
+        locations: user.locations ? user.locations.map((loc: any) => Number(loc)) : []
+      }));
+      setAllUsers(processedUsers);
     } catch (error) {
       console.error('Error deleting user:', error);
       alert('An error occurred: ' + (error as Error).message);
@@ -450,7 +538,7 @@ export default function Dashboard() {
         .from('master_locations')
         .select('*');
   
-      setAllLocations(locationsData?.filter((l: Location) => l.is_active) || []);
+      setAllLocations(locationsData || []);
   
       setIsLocationDialogOpen(false);
     }
@@ -473,8 +561,8 @@ export default function Dashboard() {
     const { data: locationsData } = await supabaseClient
       .from('master_locations')
       .select('*');
-  
-    setAllLocations(locationsData?.filter((l: Location) => l.is_active) || []);
+
+    setAllLocations(locationsData || []);
   };
 
   const filteredUsers = useMemo(() =>
@@ -859,7 +947,12 @@ export default function Dashboard() {
                         const fetchData = async () => {
                           if (!supabaseClient) return;
                           const { data: usersData } = await supabaseClient.from('users').select('*');
-                          setAllUsers(usersData || []);
+                          // Convert string location IDs to numbers
+                          const processedUsers = (usersData || []).map(user => ({
+                            ...user,
+                            locations: user.locations ? user.locations.map((loc: any) => Number(loc)) : []
+                          }));
+                          setAllUsers(processedUsers);
                         };
                         fetchData();
                       }} className="bg-green-600 hover:bg-green-700 text-white">
@@ -891,9 +984,9 @@ export default function Dashboard() {
                             <Badge className={`text-xs ${getRoleColor(user.role)}`}>
                               {getRoleDisplay(user.role)}
                             </Badge>
-                            {user.locations && user.locations.map((loc: string) => (
-                              <Badge key={loc} variant="outline" className="text-xs border-green-300 text-green-700">
-                                {loc}
+                            {user.locations && getLocationNamesFromIds(user.locations).map((locationName: string) => (
+                              <Badge key={locationName} variant="outline" className="text-xs border-green-300 text-green-700">
+                                {locationName}
                               </Badge>
                             ))}
                           </div>
@@ -923,9 +1016,9 @@ export default function Dashboard() {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              {user.locations && user.locations.map((loc: string) => (
-                                <Badge key={loc} variant="outline" className="text-xs border-green-300 text-green-700 mr-1">
-                                  {loc}
+                              {user.locations && getLocationNamesFromIds(user.locations).map((locationName: string) => (
+                                <Badge key={locationName} variant="outline" className="text-xs border-green-300 text-green-700 mr-1">
+                                  {locationName}
                                 </Badge>
                               ))}
                             </TableCell>
@@ -1016,20 +1109,20 @@ export default function Dashboard() {
                       <div className="space-y-2">
                         <Label>Lokasi</Label>
                         <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                          {allLocations.map((location: any) => (
-                            <div key={location.name} className="flex items-center space-x-2 min-w-0">
+                          {allLocations.filter((location: Location) => location.is_active).map((location: any) => (
+                            <div key={location.id} className="flex items-center space-x-2 min-w-0">
                               <Checkbox
-                                id={`location-${location.name}`}
-                                checked={selectedLocations.includes(location.name)}
+                                id={`location-${location.id}`}
+                                checked={selectedLocations.includes(location.id)}
                                 onCheckedChange={(checked: boolean) => {
                                   if (checked) {
-                                    setSelectedLocations(prev => [...prev, location.name]);
+                                    setSelectedLocations(prev => [...prev, location.id]);
                                   } else {
-                                    setSelectedLocations(prev => prev.filter(l => l !== location.name));
+                                    setSelectedLocations(prev => prev.filter(l => l !== location.id));
                                   }
                                 }}
                               />
-                              <Label htmlFor={`location-${location.name}`} className="text-xs leading-tight truncate">
+                              <Label htmlFor={`location-${location.id}`} className="text-xs leading-tight truncate">
                                 {location.name}
                               </Label>
                             </div>
@@ -1079,7 +1172,7 @@ export default function Dashboard() {
                             .from('master_locations')
                             .select('*');
 
-                          setAllLocations(locationsData?.filter((l: Location) => l.is_active) || []);
+                          setAllLocations(locationsData || []);
                         };
                         fetchData();
                       }} className="bg-green-600 hover:bg-green-700 text-white">
