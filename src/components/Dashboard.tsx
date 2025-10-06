@@ -53,6 +53,8 @@ export default function Dashboard() {
   const [newPassword, setNewPassword] = useState('');
   const [newUserRole, setNewUserRole] = useState('');
   const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [stockData, setStockData] = useState<any[]>([]);
+  const [isLoadingStock, setIsLoadingStock] = useState(true);
 
   // Create authenticated client
   const supabaseClient = useMemo(() => {
@@ -164,23 +166,57 @@ export default function Dashboard() {
     }
   }, [userRole, supabaseClient]);
 
-  // Mock data for stocks (will be filtered later)
-  const stockData = useMemo(() => {
-    const baseData = [
-      { name: "Beras Mentah - Gudang A", category: "Bahan Baku", location: "Jakarta", quantity: 1250, unit: "ton", status: "Normal" },
-      { name: "Beras Mentah - Gudang B", category: "Bahan Baku", location: "Surabaya", quantity: 890, unit: "ton", status: "Rendah" },
-      { name: "Beras Premium - Jakarta", category: "Barang Jadi", location: "Jakarta", quantity: 450, unit: "ton", status: "Normal" },
-      { name: "Beras Standar - Surabaya", category: "Barang Jadi", location: "Surabaya", quantity: 320, unit: "ton", status: "Normal" },
-      { name: "Beras Organik - Bandung", category: "Barang Jadi", location: "Bandung", quantity: 180, unit: "ton", status: "Tinggi" },
-    ];
+  // Fetch stock data from Supabase
+  useEffect(() => {
+    if (supabaseClient) {
+      const fetchStockData = async () => {
+        setIsLoadingStock(true);
+        try {
+          const { data, error } = await supabaseClient
+            .from('stock')
+            .select('*')
+            .order('location')
+            .order('name');
 
-    // Filter for sales roles
+          if (error) {
+            console.error('Error fetching stock data:', error);
+            return;
+          }
+
+          setStockData(data || []);
+        } catch (error) {
+          console.error('Error in fetchStockData:', error);
+        } finally {
+          setIsLoadingStock(false);
+        }
+      };
+
+      fetchStockData();
+    }
+  }, [supabaseClient]);
+
+  // Process stock data for display (filter by user role and location)
+  const processedStockData = useMemo(() => {
+    if (!stockData.length) return [];
+
+    let filteredData = stockData;
+
+    // Filter for sales roles based on their assigned locations
     if (userRole === 'SALES_MANAGER_ROLE' || userRole === 'SALES_SUPERVISOR_ROLE') {
-      return baseData.filter(item => currentUserLocations.includes(item.location));
+      filteredData = stockData.filter(item => currentUserLocations.includes(item.location));
     }
 
-    return baseData;
-  }, [userRole, currentUserLocations]);
+    // Transform data for display
+    return filteredData.map(item => ({
+      name: item.name,
+      category: item.product_category_name,
+      location: item.location,
+      quantity: Number(item.sumqtyonhand),
+      unit: item.uom_name,
+      productId: item.m_product_id,
+      weight: Number(item.weight)
+    }));
+  }, [stockData, userRole, currentUserLocations]);
 
   // Mock data for sales (varies by time period)
   const getSalesData = (period: string) => {
@@ -225,14 +261,6 @@ export default function Dashboard() {
 
   const pieColors = ['#22c55e', '#16a34a', '#15803d', '#166534', '#14532d'];
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Rendah': return 'bg-red-100 text-red-800 border-red-200';
-      case 'Tinggi': return 'bg-blue-100 text-blue-800 border-blue-200';
-      default: return 'bg-green-100 text-green-800 border-green-200';
-    }
-  };
-  
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'SUPERADMIN_ROLE': return 'bg-red-100 text-red-800 border-red-200';
@@ -466,6 +494,7 @@ export default function Dashboard() {
   const purchaseData = useMemo(() => getPurchaseData(timePeriod), [timePeriod, userRole, currentUserLocations]);
   const totalSales = useMemo(() => salesData.reduce((sum, item) => sum + item.value, 0), [salesData]);
   const totalPurchases = useMemo(() => purchaseData.reduce((sum, item) => sum + item.value, 0), [purchaseData]);
+  const totalStock = useMemo(() => processedStockData.reduce((sum, item) => sum + item.quantity, 0), [processedStockData]);
 
   const canAccessRestricted = userRole === 'SUPERADMIN_ROLE';
 
@@ -505,7 +534,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-green-600 mb-1">Total Stok</p>
-                <p className="text-2xl font-bold text-green-800">3,090 ton</p>
+                <p className="text-2xl font-bold text-green-800">{totalStock.toLocaleString()} ton</p>
               </div>
               <Package className="w-8 h-8 text-green-600" />
             </div>
@@ -585,42 +614,45 @@ export default function Dashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Stock List */}
                   <div className="space-y-3">
-                    {stockData.map((item, index) => (
-                      <div key={index} className="p-4 bg-green-50 rounded-lg border border-green-100">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-green-800">{item.name}</h4>
-                            <div className="flex flex-wrap gap-2 mt-1">
-                              <Badge variant="outline" className="text-xs border-green-300 text-green-700">
-                                {viewBy === "location" ? item.location : item.category}
-                              </Badge>
-                              <Badge className={`text-xs ${getStatusColor(item.status)}`}>
-                                {item.status}
-                              </Badge>
+                    {isLoadingStock ? (
+                      <div className="text-center py-8 text-green-600">Memuat data stok...</div>
+                    ) : processedStockData.length === 0 ? (
+                      <div className="text-center py-8 text-green-600">Tidak ada data stok untuk lokasi Anda</div>
+                    ) : (
+                      processedStockData.map((item, index) => (
+                        <div key={index} className="p-4 bg-green-50 rounded-lg border border-green-100">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-green-800">{item.name}</h4>
+                              <div className="flex flex-wrap gap-2 mt-1">
+                                <Badge variant="outline" className="text-xs border-green-300 text-green-700">
+                                  {viewBy === "location" ? item.location : item.category}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-green-800">{item.quantity} {item.unit}</p>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-bold text-green-800">{item.quantity} {item.unit}</p>
-                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                   
                   {/* Stock Chart */}
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={stockData}>
+                      <BarChart data={processedStockData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#dcfce7" />
-                        <XAxis 
-                          dataKey={viewBy === "location" ? "location" : "category"} 
+                        <XAxis
+                          dataKey={viewBy === "location" ? "location" : "category"}
                           tick={{ fontSize: 12 }}
                           stroke="#166534"
                         />
                         <YAxis tick={{ fontSize: 12 }} stroke="#166534" />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: '#f0fdf4', 
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#f0fdf4',
                             border: '1px solid #bbf7d0',
                             borderRadius: '8px'
                           }}
