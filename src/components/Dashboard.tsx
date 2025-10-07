@@ -324,6 +324,27 @@ export default function Dashboard() {
 
   const pieColors = ['#22c55e', '#16a34a', '#15803d', '#166534', '#14532d'];
 
+  // Color palette for different categories
+  const categoryColors = [
+    '#22c55e', // green-500
+    '#3b82f6', // blue-500
+    '#f59e0b', // amber-500
+    '#ef4444', // red-500
+    '#8b5cf6', // violet-500
+    '#06b6d4', // cyan-500
+    '#f97316', // orange-500
+    '#84cc16', // lime-500
+    '#ec4899', // pink-500
+    '#6b7280', // gray-500
+  ];
+
+  // Function to get color for category
+  const getCategoryColor = (category: string, index: number) => {
+    // Use category name to consistently assign colors
+    const colorIndex = category.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % categoryColors.length;
+    return categoryColors[colorIndex];
+  };
+
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'SUPERADMIN_ROLE': return 'bg-red-100 text-red-800 border-red-200';
@@ -781,7 +802,11 @@ export default function Dashboard() {
                             `Category: ${props.payload?.category || 'N/A'}`
                           ]}
                         />
-                        <Bar dataKey="quantity" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="quantity" radius={[4, 4, 0, 0]}>
+                          {processedStockData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={getCategoryColor(entry.category, index)} />
+                          ))}
+                        </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
