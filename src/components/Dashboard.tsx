@@ -345,6 +345,12 @@ export default function Dashboard() {
     return categoryColors[colorIndex];
   };
 
+  // Get unique categories for legend
+  const uniqueCategories = useMemo(() => {
+    const categories = new Set(processedStockData.map(item => item.category));
+    return Array.from(categories).sort();
+  }, [processedStockData]);
+
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'SUPERADMIN_ROLE': return 'bg-red-100 text-red-800 border-red-200';
@@ -810,6 +816,26 @@ export default function Dashboard() {
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
+
+                  {/* Legend */}
+                  {uniqueCategories.length > 0 && (
+                    <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-100">
+                      <h5 className="text-sm font-medium text-green-800 mb-3">Kategori:</h5>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                        {uniqueCategories.map((category, index) => (
+                          <div key={category} className="flex items-center space-x-2">
+                            <div
+                              className="w-4 h-4 rounded-sm border border-gray-300"
+                              style={{ backgroundColor: getCategoryColor(category, index) }}
+                            ></div>
+                            <span className="text-xs text-green-700 truncate" title={category}>
+                              {category}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </Card>
