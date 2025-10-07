@@ -814,28 +814,32 @@ export default function Dashboard() {
                           ))}
                         </Bar>
                       </BarChart>
+                      
+                    </ResponsiveContainer>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <div>
+                        {/* Legend */}
+                      {uniqueCategories.length > 0 && (
+                        <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-100">
+                          <h5 className="text-sm font-medium text-green-800 mb-3">Kategori:</h5>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                            {uniqueCategories.map((category, index) => (
+                              <div key={category} className="flex items-center space-x-2">
+                                <div
+                                  className="w-4 h-4 rounded-sm border border-gray-300"
+                                  style={{ backgroundColor: getCategoryColor(category, index) }}
+                                ></div>
+                                <span className="text-xs text-green-700 truncate" title={category}>
+                                  {category}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      </div>  
                     </ResponsiveContainer>
                   </div>
-
-                  {/* Legend */}
-                  {uniqueCategories.length > 0 && (
-                    <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-100">
-                      <h5 className="text-sm font-medium text-green-800 mb-3">Kategori:</h5>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-                        {uniqueCategories.map((category, index) => (
-                          <div key={category} className="flex items-center space-x-2">
-                            <div
-                              className="w-4 h-4 rounded-sm border border-gray-300"
-                              style={{ backgroundColor: getCategoryColor(category, index) }}
-                            ></div>
-                            <span className="text-xs text-green-700 truncate" title={category}>
-                              {category}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             </Card>
