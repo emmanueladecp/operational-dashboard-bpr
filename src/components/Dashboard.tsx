@@ -55,6 +55,7 @@ export default function Dashboard() {
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [stockData, setStockData] = useState<any[]>([]);
   const [isLoadingStock, setIsLoadingStock] = useState(true);
+  const [locationFilter, setLocationFilter] = useState<string[]>(['all']);
 
   // Create authenticated client
   const supabaseClient = useMemo(() => {
@@ -248,6 +249,14 @@ export default function Dashboard() {
       filteredData = stockData.filter(item => currentUserLocationNames.includes(item.location));
     }
 
+    // Apply location filter if not 'all' and locations are selected
+    if (!locationFilter.includes('all') && locationFilter.length > 0) {
+      filteredData = filteredData.filter(item => locationFilter.includes(item.location));
+    } else if (locationFilter.length === 0) {
+      // If no locations selected, show no data
+      filteredData = [];
+    }
+
     // Filter to show only Raw Materials (BB)
     filteredData = filteredData.filter(item => item.product_type === 'RAW MATERIAL');
 
@@ -278,7 +287,7 @@ export default function Dashboard() {
         }
         return a.category.localeCompare(b.category);
       });
-  }, [stockData, userRole, currentUserLocations]);
+  }, [stockData, userRole, currentUserLocations, locationFilter]);
 
   const processedStockDataFG = useMemo(() => {
     if (!stockData.length) return [];
@@ -289,6 +298,14 @@ export default function Dashboard() {
     if (userRole === 'SALES_MANAGER_ROLE' || userRole === 'SALES_SUPERVISOR_ROLE') {
       const currentUserLocationNames = getCurrentUserLocationNames();
       filteredData = stockData.filter(item => currentUserLocationNames.includes(item.location));
+    }
+
+    // Apply location filter if not 'all' and locations are selected
+    if (!locationFilter.includes('all') && locationFilter.length > 0) {
+      filteredData = filteredData.filter(item => locationFilter.includes(item.location));
+    } else if (locationFilter.length === 0) {
+      // If no locations selected, show no data
+      filteredData = [];
     }
 
     // Filter to show only Finished Goods (FG)
@@ -321,7 +338,7 @@ export default function Dashboard() {
         }
         return a.category.localeCompare(b.category);
       });
-  }, [stockData, userRole, currentUserLocations]);
+  }, [stockData, userRole, currentUserLocations, locationFilter]);
 
   // Keep the original processedStockData for backward compatibility (BB data)
   const processedStockData = processedStockDataBB;
@@ -855,7 +872,55 @@ export default function Dashboard() {
           <TabsContent value="stocks-bb" className="space-y-4">
             <Card className="border-green-200">
               <div className="p-6">
-                
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-2 sm:space-y-0">
+                  <h3 className="text-lg font-semibold text-green-800">Level Stok Bahan Baku (BB)</h3>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <Label className="text-sm text-green-700 mr-2">Filter Lokasi:</Label>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="all-locations-bb"
+                          checked={locationFilter.includes('all')}
+                          onCheckedChange={(checked: boolean) => {
+                            if (checked) {
+                              setLocationFilter(['all']);
+                            } else if (locationFilter.length === 1) {
+                              setLocationFilter([]);
+                            }
+                          }}
+                        />
+                        <Label htmlFor="all-locations-bb" className="text-sm text-green-700">
+                          Semua Lokasi
+                        </Label>
+                      </div>
+                      <div className="flex flex-wrap gap-2 ml-2">
+                        {allLocations.filter(location => location.is_active).map((location) => (
+                          <div key={location.id} className="flex items-center space-x-1">
+                            <Checkbox
+                              id={`location-bb-${location.id}`}
+                              checked={locationFilter.includes(location.name)}
+                              onCheckedChange={(checked: boolean) => {
+                                if (checked) {
+                                  if (locationFilter.includes('all')) {
+                                    setLocationFilter([location.name]);
+                                  } else {
+                                    setLocationFilter(prev => [...prev.filter(l => l !== 'all'), location.name]);
+                                  }
+                                } else {
+                                  setLocationFilter(prev => prev.filter(l => l !== location.name));
+                                }
+                              }}
+                            />
+                            <Label htmlFor={`location-bb-${location.id}`} className="text-xs text-green-700">
+                              {location.name}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Stock List */}
                   <div className="space-y-3">
@@ -913,33 +978,33 @@ export default function Dashboard() {
                           ))}
                         </Bar>
                       </BarChart>
-                      
-                    </ResponsiveContainer>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <div>
-                        {/* Legend */}
-                      {uniqueCategories.length > 0 && (
-                        <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-100">
-                          <h5 className="text-sm font-medium text-green-800 mb-3">Kategori:</h5>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-                            {uniqueCategories.map((category, index) => (
-                              <div key={category} className="flex items-center space-x-2">
-                                <div
-                                  className="w-4 h-4 rounded-sm border border-gray-300"
-                                  style={{ backgroundColor: getCategoryColor(category, index) }}
-                                ></div>
-                                <span className="text-xs text-green-700 truncate" title={category}>
-                                  {category}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      </div>  
                     </ResponsiveContainer>
                   </div>
                 </div>
+
+                <ResponsiveContainer width="100%" height="100%">
+                  <div>
+                    {/* Legend */}
+                  {uniqueCategories.length > 0 && (
+                    <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-100">
+                      <h5 className="text-sm font-medium text-green-800 mb-3">Kategori:</h5>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                        {uniqueCategories.map((category, index) => (
+                          <div key={category} className="flex items-center space-x-2">
+                            <div
+                              className="w-4 h-4 rounded-sm border border-gray-300"
+                              style={{ backgroundColor: getCategoryColor(category, index) }}
+                            ></div>
+                            <span className="text-xs text-green-700 truncate" title={category}>
+                              {category}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  </div>  
+                </ResponsiveContainer>
               </div>
             </Card>
           </TabsContent>
@@ -948,6 +1013,54 @@ export default function Dashboard() {
           <TabsContent value="stocks-fg" className="space-y-4">
             <Card className="border-green-200">
               <div className="p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-2 sm:space-y-0">
+                  <h3 className="text-lg font-semibold text-blue-800">Level Stok Barang Jadi (FG)</h3>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <Label className="text-sm text-blue-700 mr-2">Filter Lokasi:</Label>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="all-locations-fg"
+                          checked={locationFilter.includes('all')}
+                          onCheckedChange={(checked: boolean) => {
+                            if (checked) {
+                              setLocationFilter(['all']);
+                            } else if (locationFilter.length === 1) {
+                              setLocationFilter([]);
+                            }
+                          }}
+                        />
+                        <Label htmlFor="all-locations-fg" className="text-sm text-blue-700">
+                          Semua Lokasi
+                        </Label>
+                      </div>
+                      <div className="flex flex-wrap gap-2 ml-2">
+                        {allLocations.filter(location => location.is_active).map((location) => (
+                          <div key={location.id} className="flex items-center space-x-1">
+                            <Checkbox
+                              id={`location-fg-${location.id}`}
+                              checked={locationFilter.includes(location.name)}
+                              onCheckedChange={(checked: boolean) => {
+                                if (checked) {
+                                  if (locationFilter.includes('all')) {
+                                    setLocationFilter([location.name]);
+                                  } else {
+                                    setLocationFilter(prev => [...prev.filter(l => l !== 'all'), location.name]);
+                                  }
+                                } else {
+                                  setLocationFilter(prev => prev.filter(l => l !== location.name));
+                                }
+                              }}
+                            />
+                            <Label htmlFor={`location-fg-${location.id}`} className="text-xs text-blue-700">
+                              {location.name}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Stock List */}
@@ -978,66 +1091,69 @@ export default function Dashboard() {
                   </div>
 
                   {/* Stock Chart */}
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={processedStockDataFG}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#dbeafe" />
-                        <XAxis
-                          dataKey="location"
-                          tick={{ fontSize: 12 }}
-                          stroke="#1e40af"
-                        />
-                        <YAxis tick={{ fontSize: 12 }} stroke="#1e40af" />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: '#eff6ff',
-                            border: '1px solid #bfdbfe',
-                            borderRadius: '8px'
-                          }}
-                          labelFormatter={(label) => `Location: ${label}`}
-                          formatter={(value, name, props) => [
-                            `${Number(value).toLocaleString('id-ID')} ${props.payload?.unit || 'ton'}`,
-                            `Category: ${props.payload?.category || 'N/A'}`
-                          ]}
-                        />
-                        <Bar dataKey="quantity" radius={[4, 4, 0, 0]}>
-                          {processedStockDataFG.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={getCategoryColor(entry.category, index)} />
-                          ))}
-                        </Bar>
-                      </BarChart>
+                    <div className="h-80">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={processedStockDataFG}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#dbeafe" />
+                          <XAxis
+                            dataKey="location"
+                            tick={{ fontSize: 12 }}
+                            stroke="#1e40af"
+                          />
+                          <YAxis tick={{ fontSize: 12 }} stroke="#1e40af" />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: '#eff6ff',
+                              border: '1px solid #bfdbfe',
+                              borderRadius: '8px'
+                            }}
+                            labelFormatter={(label) => `Location: ${label}`}
+                            formatter={(value, name, props) => [
+                              `${Number(value).toLocaleString('id-ID')} ${props.payload?.unit || 'ton'}`,
+                              `Category: ${props.payload?.category || 'N/A'}`
+                            ]}
+                          />
+                          <Bar dataKey="quantity" radius={[4, 4, 0, 0]}>
+                            {processedStockDataFG.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={getCategoryColor(entry.category, index)} />
+                            ))}
+                          </Bar>
+                        </BarChart>
 
-                    </ResponsiveContainer>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <div>
-                        {/* Legend */}
-                      {(() => {
-                        const uniqueCategoriesFG = new Set(processedStockDataFG.map(item => item.category));
-                        const uniqueCategoriesArray = Array.from(uniqueCategoriesFG).sort();
-
-                        return uniqueCategoriesArray.length > 0 && (
-                          <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                            <h5 className="text-sm font-medium text-blue-800 mb-3">Kategori:</h5>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-                              {uniqueCategoriesArray.map((category, index) => (
-                                <div key={category} className="flex items-center space-x-2">
-                                  <div
-                                    className="w-4 h-4 rounded-sm border border-gray-300"
-                                    style={{ backgroundColor: getCategoryColor(category, index) }}
-                                  ></div>
-                                  <span className="text-xs text-blue-700 truncate" title={category}>
-                                    {category}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })()}
-                      </div>
-                    </ResponsiveContainer>
-                  </div>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="h-200">
+                      
+                    </div>
                 </div>
+                <ResponsiveContainer width="100%" height="100%">
+                  <div>
+                    {/* Legend */}
+                  {(() => {
+                    const uniqueCategoriesFG = new Set(processedStockDataFG.map(item => item.category));
+                    const uniqueCategoriesArray = Array.from(uniqueCategoriesFG).sort();
+
+                    return uniqueCategoriesArray.length > 0 && (
+                      <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                        <h5 className="text-sm font-medium text-blue-800 mb-3">Kategori:</h5>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                          {uniqueCategoriesArray.map((category, index) => (
+                            <div key={category} className="flex items-center space-x-2">
+                              <div
+                                className="w-4 h-4 rounded-sm border border-gray-300"
+                                style={{ backgroundColor: getCategoryColor(category, index) }}
+                              ></div>
+                              <span className="text-xs text-blue-700 truncate" title={category}>
+                                {category}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  </div>
+                </ResponsiveContainer>
               </div>
             </Card>
           </TabsContent>
