@@ -251,32 +251,47 @@ export default function Dashboard() {
     // Filter to show only Raw Materials (BB) for now
     filteredData = filteredData.filter(item => item.product_type === 'RAW MATERIAL');
 
-    // Aggregate data by category and location
+    // Aggregate data based on viewBy selection
     const aggregatedMap = new Map();
 
     filteredData.forEach(item => {
-      const key = `${item.product_category_name}-${item.location}`;
-      const quantity = Number(item.sumqtyonhand);
+      let key, aggregatedItem;
 
-      if (aggregatedMap.has(key)) {
-        aggregatedMap.get(key).quantity += quantity;
+      if (viewBy === "location") {
+        // Group by location (sum all categories within each location)
+        key = item.location;
+        if (aggregatedMap.has(key)) {
+          aggregatedMap.get(key).quantity += Number(item.sumqtyonhand);
+        } else {
+          aggregatedMap.set(key, {
+            location: item.location,
+            category: "All Categories", // Represent aggregated categories
+            quantity: Number(item.sumqtyonhand),
+            unit: item.uom_name
+          });
+        }
       } else {
-        aggregatedMap.set(key, {
-          category: item.product_category_name,
-          location: item.location,
-          quantity: quantity,
-          unit: item.uom_name
-        });
+        // Group by category (sum all locations within each category)
+        key = item.product_category_name;
+        if (aggregatedMap.has(key)) {
+          aggregatedMap.get(key).quantity += Number(item.sumqtyonhand);
+        } else {
+          aggregatedMap.set(key, {
+            category: item.product_category_name,
+            location: "All Locations", // Represent aggregated locations
+            quantity: Number(item.sumqtyonhand),
+            unit: item.uom_name
+          });
+        }
       }
     });
 
-    // Convert map to array and sort by location then category
+    // Convert map to array and sort appropriately
     return Array.from(aggregatedMap.values())
       .sort((a, b) => {
-        if (a.location !== b.location) {
-          return a.location.localeCompare(b.location);
-        }
-        return a.category.localeCompare(b.category);
+        const aKey = viewBy === "location" ? a.location : a.category;
+        const bKey = viewBy === "location" ? b.location : b.category;
+        return aKey.localeCompare(bKey);
       });
   }, [stockData, userRole, currentUserLocations]);
 
@@ -622,7 +637,7 @@ export default function Dashboard() {
     return filteredData
       .filter(item => item.product_type === 'FINISHED GOODS')
       .reduce((sum, item) => sum + Number(item.sumqtyonhand), 0);
-  }, [stockData, userRole, currentUserLocations]);
+  }, [stockData, userRole, currentUserLocations, viewBy]);
 
 
   const totalStock = useMemo(() => totalStockBB + totalStockFG, [totalStockBB, totalStockFG]);
@@ -763,10 +778,15 @@ export default function Dashboard() {
                         <div key={index} className="p-4 bg-green-50 rounded-lg border border-green-100">
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                             <div className="flex-1">
-                              <h4 className="font-medium text-green-800">{item.category}</h4>
+                              <h4 className="font-medium text-green-800">
+                                {viewBy === "location" ? item.location : item.category}
+                              </h4>
                               <div className="flex flex-wrap gap-2 mt-1">
                                 <Badge variant="outline" className="text-xs border-green-300 text-green-700">
-                                  {item.location}
+                                  {viewBy === "location"
+                                    ? (item.category !== "All Categories" ? item.category : "All Categories")
+                                    : (item.location !== "All Locations" ? item.location : "All Locations")
+                                  }
                                 </Badge>
                               </div>
                             </div>
@@ -785,7 +805,7 @@ export default function Dashboard() {
                       <BarChart data={processedStockData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#dcfce7" />
                         <XAxis
-                          dataKey="location"
+                          dataKey={viewBy === "location" ? "location" : "category"}
                           tick={{ fontSize: 12 }}
                           stroke="#166534"
                         />
@@ -796,10 +816,16 @@ export default function Dashboard() {
                             border: '1px solid #bbf7d0',
                             borderRadius: '8px'
                           }}
-                          labelFormatter={(label) => `Location: ${label}`}
+                          labelFormatter={(label) => {
+                            if (viewBy === "location") {
+                              return `Location: ${label}`;
+                            } else {
+                              return `Category: ${label}`;
+                            }
+                          }}
                           formatter={(value, name, props) => [
                             `${value} ${props.payload?.unit || 'ton'}`,
-                            props.payload?.category || 'Category'
+                            viewBy === "location" ? (props.payload?.category || 'Category') : (props.payload?.location || 'Location')
                           ]}
                         />
                         <Bar dataKey="quantity" fill="#22c55e" radius={[4, 4, 0, 0]} />
