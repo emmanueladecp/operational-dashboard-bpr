@@ -236,8 +236,8 @@ export default function Dashboard() {
     }
   }, [supabaseClient]);
 
-  // Process stock data for display (filter by user role and location, then aggregate by category)
-  const processedStockData = useMemo(() => {
+  // Process stock data for BB (Raw Materials) and FG (Finished Goods) separately
+  const processedStockDataBB = useMemo(() => {
     if (!stockData.length) return [];
 
     let filteredData = stockData;
@@ -248,7 +248,7 @@ export default function Dashboard() {
       filteredData = stockData.filter(item => currentUserLocationNames.includes(item.location));
     }
 
-    // Filter to show only Raw Materials (BB) for now
+    // Filter to show only Raw Materials (BB)
     filteredData = filteredData.filter(item => item.product_type === 'RAW MATERIAL');
 
     // Aggregate data by category and location
@@ -279,6 +279,52 @@ export default function Dashboard() {
         return a.category.localeCompare(b.category);
       });
   }, [stockData, userRole, currentUserLocations]);
+
+  const processedStockDataFG = useMemo(() => {
+    if (!stockData.length) return [];
+
+    let filteredData = stockData;
+
+    // Filter for sales roles based on their assigned locations
+    if (userRole === 'SALES_MANAGER_ROLE' || userRole === 'SALES_SUPERVISOR_ROLE') {
+      const currentUserLocationNames = getCurrentUserLocationNames();
+      filteredData = stockData.filter(item => currentUserLocationNames.includes(item.location));
+    }
+
+    // Filter to show only Finished Goods (FG)
+    filteredData = filteredData.filter(item => item.product_type === 'FINISHED GOODS');
+
+    // Aggregate data by category and location
+    const aggregatedMap = new Map();
+
+    filteredData.forEach(item => {
+      const key = `${item.product_category_name}-${item.location}`;
+      const quantity = Number(item.sumqtyonhand);
+
+      if (aggregatedMap.has(key)) {
+        aggregatedMap.get(key).quantity += quantity;
+      } else {
+        aggregatedMap.set(key, {
+          category: item.product_category_name,
+          location: item.location,
+          quantity: quantity,
+          unit: item.uom_name
+        });
+      }
+    });
+
+    // Convert map to array and sort by location then category
+    return Array.from(aggregatedMap.values())
+      .sort((a, b) => {
+        if (a.location !== b.location) {
+          return a.location.localeCompare(b.location);
+        }
+        return a.category.localeCompare(b.category);
+      });
+  }, [stockData, userRole, currentUserLocations]);
+
+  // Keep the original processedStockData for backward compatibility (BB data)
+  const processedStockData = processedStockDataBB;
 
   // Mock data for sales (varies by time period)
   const getSalesData = (period: string) => {
@@ -324,7 +370,7 @@ export default function Dashboard() {
 
   const pieColors = ['#22c55e', '#16a34a', '#15803d', '#166534', '#14532d'];
 
-  // Color palette for different categories
+  // Expanded color palette for different categories to reduce collisions
   const categoryColors = [
     '#22c55e', // green-500
     '#3b82f6', // blue-500
@@ -336,27 +382,65 @@ export default function Dashboard() {
     '#84cc16', // lime-500
     '#ec4899', // pink-500
     '#6b7280', // gray-500
+    '#14b8a6', // teal-500
+    '#f43f5e', // rose-500
+    '#6366f1', // indigo-500
+    '#a855f7', // purple-500
+    '#059669', // emerald-600
+    '#dc2626', // red-600
+    '#2563eb', // blue-600
+    '#7c3aed', // violet-600
+    '#0891b2', // cyan-600
+    '#ea580c', // orange-600
   ];
+
+  // Category color mapping to ensure consistency and uniqueness
+  const categoryColorMap = useMemo(() => {
+    const map = new Map();
+
+    // Pre-assign colors for known special categories
+    map.set('BERAS 42', '#22c55e'); // green-500
+    map.set('BERAS ASALAN', '#3b82f6'); // blue-500
+    map.set('GABAH 64', '#f97316'); // orange-500
+    map.set('GABAH BULAT', '#06b6d4'); // cyan-500
+
+    return map;
+  }, []);
 
   // Function to get color for category
   const getCategoryColor = (category: string, index: number) => {
-    // Use category name to consistently assign colors, but handle special cases for similar categories
-    if (category === 'BERAS 42') {
-      return '#22c55e'; // green-500
-    }
-    if (category === 'BERAS ASALAN') {
-      return '#3b82f6'; // blue-500
-    }
-    if (category === 'GABAH 64') {
-      return '#f97316'; // orange-500
-    }
-    if (category === 'GABAH BULAT') {
-      return '#06b6d4'; // cyan-500
+    // Check if we already have a color assigned for this category
+    if (categoryColorMap.has(category)) {
+      return categoryColorMap.get(category);
     }
 
-    // Use category name to consistently assign colors for other categories
-    const colorIndex = category.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % categoryColors.length;
-    return categoryColors[colorIndex];
+    // Use a more robust hashing algorithm to ensure unique colors for different categories
+    let hash = 0;
+    for (let i = 0; i < category.length; i++) {
+      const char = category.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+
+    // Use the absolute value and modulo to get a consistent index
+    const colorIndex = Math.abs(hash) % categoryColors.length;
+
+    // Double-check that this color isn't already used by another category
+    const selectedColor = categoryColors[colorIndex];
+
+    // If this exact color is already used by a different category, try the next one
+    for (let i = 1; i < categoryColors.length; i++) {
+      const checkIndex = (colorIndex + i) % categoryColors.length;
+      if (!Array.from(categoryColorMap.values()).includes(categoryColors[checkIndex])) {
+        const finalColor = categoryColors[checkIndex];
+        categoryColorMap.set(category, finalColor);
+        return finalColor;
+      }
+    }
+
+    // Fallback: use the originally selected color
+    categoryColorMap.set(category, selectedColor);
+    return selectedColor;
   };
 
   // Get unique categories for legend
@@ -649,10 +733,8 @@ export default function Dashboard() {
   );
 
   const totalStockFG = useMemo(() =>
-    processedStockData
-      .filter(item => item.productType === 'FINISHED GOODS')
-      .reduce((sum, item) => sum + item.quantity, 0),
-    [processedStockData]
+    processedStockDataFG.reduce((sum, item) => sum + item.quantity, 0),
+    [processedStockDataFG]
   );
 
 
@@ -855,6 +937,104 @@ export default function Dashboard() {
                         </div>
                       )}
                       </div>  
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* Finished Goods Tab */}
+          <TabsContent value="stocks-fg" className="space-y-4">
+            <Card className="border-green-200">
+              <div className="p-6">
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Stock List */}
+                  <div className="space-y-3">
+                    {isLoadingStock ? (
+                      <div className="text-center py-8 text-green-600">Memuat data stok...</div>
+                    ) : processedStockDataFG.length === 0 ? (
+                      <div className="text-center py-8 text-green-600">Tidak ada data stok finished goods untuk lokasi Anda</div>
+                    ) : (
+                      processedStockDataFG.map((item, index) => (
+                        <div key={index} className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-blue-800">{item.category}</h4>
+                              <div className="flex flex-wrap gap-2 mt-1">
+                                <Badge variant="outline" className="text-xs border-blue-300 text-blue-700">
+                                  {item.location}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-blue-800">{item.quantity.toLocaleString('id-ID')} {item.unit}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Stock Chart */}
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={processedStockDataFG}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#dbeafe" />
+                        <XAxis
+                          dataKey="location"
+                          tick={{ fontSize: 12 }}
+                          stroke="#1e40af"
+                        />
+                        <YAxis tick={{ fontSize: 12 }} stroke="#1e40af" />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#eff6ff',
+                            border: '1px solid #bfdbfe',
+                            borderRadius: '8px'
+                          }}
+                          labelFormatter={(label) => `Location: ${label}`}
+                          formatter={(value, name, props) => [
+                            `${Number(value).toLocaleString('id-ID')} ${props.payload?.unit || 'ton'}`,
+                            `Category: ${props.payload?.category || 'N/A'}`
+                          ]}
+                        />
+                        <Bar dataKey="quantity" radius={[4, 4, 0, 0]}>
+                          {processedStockDataFG.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={getCategoryColor(entry.category, index)} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+
+                    </ResponsiveContainer>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <div>
+                        {/* Legend */}
+                      {(() => {
+                        const uniqueCategoriesFG = new Set(processedStockDataFG.map(item => item.category));
+                        const uniqueCategoriesArray = Array.from(uniqueCategoriesFG).sort();
+
+                        return uniqueCategoriesArray.length > 0 && (
+                          <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                            <h5 className="text-sm font-medium text-blue-800 mb-3">Kategori:</h5>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                              {uniqueCategoriesArray.map((category, index) => (
+                                <div key={category} className="flex items-center space-x-2">
+                                  <div
+                                    className="w-4 h-4 rounded-sm border border-gray-300"
+                                    style={{ backgroundColor: getCategoryColor(category, index) }}
+                                  ></div>
+                                  <span className="text-xs text-blue-700 truncate" title={category}>
+                                    {category}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      </div>
                     </ResponsiveContainer>
                   </div>
                 </div>

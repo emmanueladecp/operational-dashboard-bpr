@@ -72,16 +72,16 @@ Deno.serve(async (req)=>{
     if (stockRecords.length === 0) {
       throw new Error('No valid stock records to insert');
     }
-    // Delete existing RAW MATERIAL stock records before inserting new data
-    console.log('Deleting existing RAW MATERIAL stock records...');
+    // Delete existing stock records for both RAW MATERIAL and FINISHED_GOODS before inserting new data
+    console.log('Deleting existing stock records...');
     const { error: deleteError } = await supabase
       .from('stock')
       .delete()
-      .eq('product_type', 'RAW MATERIAL');
+      .in('product_type', ['RAW MATERIAL', 'FINISHED_GOODS']);
     if (deleteError) {
       throw new Error(`Failed to delete existing stock records: ${deleteError.message}`);
     }
-    console.log('Successfully deleted existing RAW MATERIAL stock records');
+    console.log('Successfully deleted existing stock records');
     // Insert new stock records (since we deleted existing ones, no conflicts expected)
     const { data: insertData, error: insertError } = await supabase
       .from('stock')
