@@ -248,6 +248,9 @@ export default function Dashboard() {
       filteredData = stockData.filter(item => currentUserLocationNames.includes(item.location));
     }
 
+    // Filter to show only Raw Materials (BB) for now
+    filteredData = filteredData.filter(item => item.product_type === 'RAW MATERIAL');
+
     // Transform data for display
     return filteredData.map(item => ({
       name: item.name,
@@ -597,6 +600,7 @@ export default function Dashboard() {
     [processedStockData]
   );
 
+
   const totalStock = useMemo(() => totalStockBB + totalStockFG, [totalStockBB, totalStockFG]);
 
   const canAccessRestricted = userRole === 'SUPERADMIN_ROLE';
@@ -660,6 +664,7 @@ export default function Dashboard() {
               <TrendingUp className="w-8 h-8 text-green-600" />
             </div>
           </Card>
+          
           <Card className="p-4 border-green-200">
             <div className="flex items-center justify-between">
               <div>
@@ -685,7 +690,7 @@ export default function Dashboard() {
           <div className="overflow-x-auto pb-2">
             <TabsList className="inline-flex bg-green-100 p-1 rounded-lg min-w-max">
               <TabsTrigger value="stocks" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
-                Level Stok
+                Level Stok BB
               </TabsTrigger>
               <TabsTrigger value="sales" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
                 Data Penjualan
@@ -711,7 +716,6 @@ export default function Dashboard() {
             <Card className="border-green-200">
               <div className="p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-2 sm:space-y-0">
-                  <h3 className="text-lg font-semibold text-green-800">Level Stok Saat Ini</h3>
                   <Select value={viewBy} onValueChange={setViewBy}>
                     <SelectTrigger className="w-full sm:w-40 border-green-200">
                       <SelectValue />
