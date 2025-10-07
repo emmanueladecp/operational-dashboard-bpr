@@ -256,7 +256,8 @@ export default function Dashboard() {
       quantity: Number(item.sumqtyonhand),
       unit: item.uom_name,
       productId: item.m_product_id,
-      weight: Number(item.weight)
+      weight: Number(item.weight),
+      productType: item.product_type
     }));
   }, [stockData, userRole, currentUserLocations]);
 
@@ -582,7 +583,21 @@ export default function Dashboard() {
   const purchaseData = useMemo(() => getPurchaseData(timePeriod), [timePeriod, userRole, currentUserLocations]);
   const totalSales = useMemo(() => salesData.reduce((sum, item) => sum + item.value, 0), [salesData]);
   const totalPurchases = useMemo(() => purchaseData.reduce((sum, item) => sum + item.value, 0), [purchaseData]);
-  const totalStock = useMemo(() => processedStockData.reduce((sum, item) => sum + item.quantity, 0), [processedStockData]);
+  const totalStockBB = useMemo(() =>
+    processedStockData
+      .filter(item => item.productType === 'RAW MATERIAL')
+      .reduce((sum, item) => sum + item.quantity, 0),
+    [processedStockData]
+  );
+
+  const totalStockFG = useMemo(() =>
+    processedStockData
+      .filter(item => item.productType === 'FINISHED GOODS')
+      .reduce((sum, item) => sum + item.quantity, 0),
+    [processedStockData]
+  );
+
+  const totalStock = useMemo(() => totalStockBB + totalStockFG, [totalStockBB, totalStockFG]);
 
   const canAccessRestricted = userRole === 'SUPERADMIN_ROLE';
 
@@ -621,8 +636,17 @@ export default function Dashboard() {
           <Card className="p-4 border-green-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-green-600 mb-1">Total Stok</p>
-                <p className="text-2xl font-bold text-green-800">{totalStock.toLocaleString()} ton</p>
+                <p className="text-sm text-green-600 mb-1">Total Stok BB</p>
+                <p className="text-2xl font-bold text-green-800">{totalStockBB.toLocaleString()} ton</p>
+              </div>
+              <Package className="w-8 h-8 text-green-600" />
+            </div>
+          </Card>
+          <Card className="p-4 border-green-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-green-600 mb-1">Total Stok FG</p>
+                <p className="text-2xl font-bold text-green-800">{totalStockFG.toLocaleString()} ton</p>
               </div>
               <Package className="w-8 h-8 text-green-600" />
             </div>
