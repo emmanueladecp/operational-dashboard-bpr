@@ -251,48 +251,23 @@ export default function Dashboard() {
     // Filter to show only Raw Materials (BB) for now
     filteredData = filteredData.filter(item => item.product_type === 'RAW MATERIAL');
 
-    // Aggregate data based on viewBy selection
-    const aggregatedMap = new Map();
-
-    filteredData.forEach(item => {
-      let key, aggregatedItem;
-
-      if (viewBy === "location") {
-        // Group by location (sum all categories within each location)
-        key = item.location;
-        if (aggregatedMap.has(key)) {
-          aggregatedMap.get(key).quantity += Number(item.sumqtyonhand);
-        } else {
-          aggregatedMap.set(key, {
-            location: item.location,
-            category: "All Categories", // Represent aggregated categories
-            quantity: Number(item.sumqtyonhand),
-            unit: item.uom_name
-          });
-        }
-      } else {
-        // Group by category (sum all locations within each category)
-        key = item.product_category_name;
-        if (aggregatedMap.has(key)) {
-          aggregatedMap.get(key).quantity += Number(item.sumqtyonhand);
-        } else {
-          aggregatedMap.set(key, {
-            category: item.product_category_name,
-            location: "All Locations", // Represent aggregated locations
-            quantity: Number(item.sumqtyonhand),
-            unit: item.uom_name
-          });
-        }
+    // Transform data for display (no aggregation)
+    return filteredData.map(item => ({
+      name: item.name,
+      category: item.product_category_name,
+      location: item.location,
+      quantity: Number(item.sumqtyonhand),
+      unit: item.uom_name,
+      productId: item.m_product_id,
+      weight: Number(item.weight),
+      productType: item.product_type
+    }))
+    .sort((a, b) => {
+      if (a.location !== b.location) {
+        return a.location.localeCompare(b.location);
       }
+      return a.category.localeCompare(b.category);
     });
-
-    // Convert map to array and sort appropriately
-    return Array.from(aggregatedMap.values())
-      .sort((a, b) => {
-        const aKey = viewBy === "location" ? a.location : a.category;
-        const bKey = viewBy === "location" ? b.location : b.category;
-        return aKey.localeCompare(bKey);
-      });
   }, [stockData, userRole, currentUserLocations]);
 
   // Mock data for sales (varies by time period)
@@ -618,26 +593,18 @@ export default function Dashboard() {
   const totalSales = useMemo(() => salesData.reduce((sum, item) => sum + item.value, 0), [salesData]);
   const totalPurchases = useMemo(() => purchaseData.reduce((sum, item) => sum + item.value, 0), [purchaseData]);
   const totalStockBB = useMemo(() =>
-    processedStockData.reduce((sum, item) => sum + item.quantity, 0),
+    processedStockData
+      .filter(item => item.productType === 'RAW MATERIAL')
+      .reduce((sum, item) => sum + item.quantity, 0),
     [processedStockData]
   );
 
-  const totalStockFG = useMemo(() => {
-    if (!stockData.length) return 0;
-
-    let filteredData = stockData;
-
-    // Filter for sales roles based on their assigned locations
-    if (userRole === 'SALES_MANAGER_ROLE' || userRole === 'SALES_SUPERVISOR_ROLE') {
-      const currentUserLocationNames = getCurrentUserLocationNames();
-      filteredData = stockData.filter(item => currentUserLocationNames.includes(item.location));
-    }
-
-    // Calculate FG total from filtered data (before BB-only filtering)
-    return filteredData
-      .filter(item => item.product_type === 'FINISHED GOODS')
-      .reduce((sum, item) => sum + Number(item.sumqtyonhand), 0);
-  }, [stockData, userRole, currentUserLocations, viewBy]);
+  const totalStockFG = useMemo(() =>
+    processedStockData
+      .filter(item => item.productType === 'FINISHED GOODS')
+      .reduce((sum, item) => sum + item.quantity, 0),
+    [processedStockData]
+  );
 
 
   const totalStock = useMemo(() => totalStockBB + totalStockFG, [totalStockBB, totalStockFG]);
@@ -778,15 +745,10 @@ export default function Dashboard() {
                         <div key={index} className="p-4 bg-green-50 rounded-lg border border-green-100">
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                             <div className="flex-1">
-                              <h4 className="font-medium text-green-800">
-                                {viewBy === "location" ? item.location : item.category}
-                              </h4>
+                              <h4 className="font-medium text-green-800">{item.name}</h4>
                               <div className="flex flex-wrap gap-2 mt-1">
                                 <Badge variant="outline" className="text-xs border-green-300 text-green-700">
-                                  {viewBy === "location"
-                                    ? (item.category !== "All Categories" ? item.category : "All Categories")
-                                    : (item.location !== "All Locations" ? item.location : "All Locations")
-                                  }
+                                  {viewBy === "location" ? item.location : item.category}
                                 </Badge>
                               </div>
                             </div>
@@ -825,7 +787,7 @@ export default function Dashboard() {
                           }}
                           formatter={(value, name, props) => [
                             `${value} ${props.payload?.unit || 'ton'}`,
-                            viewBy === "location" ? (props.payload?.category || 'Category') : (props.payload?.location || 'Location')
+                            `${props.payload?.name} (${viewBy === "location" ? props.payload?.category : props.payload?.location})`
                           ]}
                         />
                         <Bar dataKey="quantity" fill="#22c55e" radius={[4, 4, 0, 0]} />
