@@ -251,23 +251,33 @@ export default function Dashboard() {
     // Filter to show only Raw Materials (BB) for now
     filteredData = filteredData.filter(item => item.product_type === 'RAW MATERIAL');
 
-    // Transform data for display (no aggregation)
-    return filteredData.map(item => ({
-      name: item.name,
-      category: item.product_category_name,
-      location: item.location,
-      quantity: Number(item.sumqtyonhand),
-      unit: item.uom_name,
-      productId: item.m_product_id,
-      weight: Number(item.weight),
-      productType: item.product_type
-    }))
-    .sort((a, b) => {
-      if (a.location !== b.location) {
-        return a.location.localeCompare(b.location);
+    // Aggregate data by category and location
+    const aggregatedMap = new Map();
+
+    filteredData.forEach(item => {
+      const key = `${item.product_category_name}-${item.location}`;
+      const quantity = Number(item.sumqtyonhand);
+
+      if (aggregatedMap.has(key)) {
+        aggregatedMap.get(key).quantity += quantity;
+      } else {
+        aggregatedMap.set(key, {
+          category: item.product_category_name,
+          location: item.location,
+          quantity: quantity,
+          unit: item.uom_name
+        });
       }
-      return a.category.localeCompare(b.category);
     });
+
+    // Convert map to array and sort by location then category
+    return Array.from(aggregatedMap.values())
+      .sort((a, b) => {
+        if (a.location !== b.location) {
+          return a.location.localeCompare(b.location);
+        }
+        return a.category.localeCompare(b.category);
+      });
   }, [stockData, userRole, currentUserLocations]);
 
   // Mock data for sales (varies by time period)
@@ -593,9 +603,7 @@ export default function Dashboard() {
   const totalSales = useMemo(() => salesData.reduce((sum, item) => sum + item.value, 0), [salesData]);
   const totalPurchases = useMemo(() => purchaseData.reduce((sum, item) => sum + item.value, 0), [purchaseData]);
   const totalStockBB = useMemo(() =>
-    processedStockData
-      .filter(item => item.productType === 'RAW MATERIAL')
-      .reduce((sum, item) => sum + item.quantity, 0),
+    processedStockData.reduce((sum, item) => sum + item.quantity, 0),
     [processedStockData]
   );
 
@@ -721,17 +729,6 @@ export default function Dashboard() {
           <TabsContent value="stocks" className="space-y-4">
             <Card className="border-green-200">
               <div className="p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-2 sm:space-y-0">
-                  <Select value={viewBy} onValueChange={setViewBy}>
-                    <SelectTrigger className="w-full sm:w-40 border-green-200">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="location">Berdasarkan Lokasi</SelectItem>
-                      <SelectItem value="category">Berdasarkan Kategori</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Stock List */}
@@ -745,10 +742,10 @@ export default function Dashboard() {
                         <div key={index} className="p-4 bg-green-50 rounded-lg border border-green-100">
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                             <div className="flex-1">
-                              <h4 className="font-medium text-green-800">{item.name}</h4>
+                              <h4 className="font-medium text-green-800">{item.category}</h4>
                               <div className="flex flex-wrap gap-2 mt-1">
                                 <Badge variant="outline" className="text-xs border-green-300 text-green-700">
-                                  {viewBy === "location" ? item.location : item.category}
+                                  {item.location}
                                 </Badge>
                               </div>
                             </div>
@@ -767,7 +764,7 @@ export default function Dashboard() {
                       <BarChart data={processedStockData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#dcfce7" />
                         <XAxis
-                          dataKey={viewBy === "location" ? "location" : "category"}
+                          dataKey="location"
                           tick={{ fontSize: 12 }}
                           stroke="#166534"
                         />
@@ -778,16 +775,10 @@ export default function Dashboard() {
                             border: '1px solid #bbf7d0',
                             borderRadius: '8px'
                           }}
-                          labelFormatter={(label) => {
-                            if (viewBy === "location") {
-                              return `Location: ${label}`;
-                            } else {
-                              return `Category: ${label}`;
-                            }
-                          }}
+                          labelFormatter={(label) => `Location: ${label}`}
                           formatter={(value, name, props) => [
                             `${value} ${props.payload?.unit || 'ton'}`,
-                            `${props.payload?.name} (${viewBy === "location" ? props.payload?.category : props.payload?.location})`
+                            `Category: ${props.payload?.category || 'N/A'}`
                           ]}
                         />
                         <Bar dataKey="quantity" fill="#22c55e" radius={[4, 4, 0, 0]} />
