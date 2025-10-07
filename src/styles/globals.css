@@ -187,3 +187,11 @@
 html {
   font-size: var(--font-size);
 }
+
+/* Login page background */
+.login-background {
+  background-image: url('/9736253c43bfd8816e150f226451d2e0086d73c6.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}

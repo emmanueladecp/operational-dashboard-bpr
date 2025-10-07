@@ -1,15 +1,11 @@
 import { Button } from "./ui/button";
 import { SignInButton, SignUpButton } from "@clerk/clerk-react";
-import exampleImage from "figma:asset/9736253c43bfd8816e150f226451d2e0086d73c6.png";
 
 export default function Login() {
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4">
       {/* Background Image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${exampleImage})` }}
-      >
+      <div className="absolute inset-0 login-background">
         <div className="absolute inset-0 bg-black/20"></div>
       </div>
 
