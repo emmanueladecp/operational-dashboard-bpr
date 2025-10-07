@@ -340,7 +340,21 @@ export default function Dashboard() {
 
   // Function to get color for category
   const getCategoryColor = (category: string, index: number) => {
-    // Use category name to consistently assign colors
+    // Use category name to consistently assign colors, but handle special cases for similar categories
+    if (category === 'BERAS 42') {
+      return '#22c55e'; // green-500
+    }
+    if (category === 'BERAS ASALAN') {
+      return '#3b82f6'; // blue-500
+    }
+    if (category === 'GABAH 64') {
+      return '#f97316'; // orange-500
+    }
+    if (category === 'GABAH BULAT') {
+      return '#06b6d4'; // cyan-500
+    }
+
+    // Use category name to consistently assign colors for other categories
     const colorIndex = category.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % categoryColors.length;
     return categoryColors[colorIndex];
   };
@@ -682,7 +696,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-green-600 mb-1">Total Stok BB</p>
-                <p className="text-2xl font-bold text-green-800">{totalStockBB.toLocaleString()} ton</p>
+                <p className="text-2xl font-bold text-green-800">{totalStockBB.toLocaleString('id-ID')} ton</p>
               </div>
               <Package className="w-8 h-8 text-green-600" />
             </div>
@@ -691,7 +705,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-green-600 mb-1">Total Stok FG</p>
-                <p className="text-2xl font-bold text-green-800">{totalStockFG.toLocaleString()} ton</p>
+                <p className="text-2xl font-bold text-green-800">{totalStockFG.toLocaleString('id-ID')} ton</p>
               </div>
               <Package className="w-8 h-8 text-green-600" />
             </div>
@@ -700,7 +714,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-green-600 mb-1">Penjualan ({timePeriod} bulan)</p>
-                <p className="text-2xl font-bold text-green-800">{totalSales} ton</p>
+                <p className="text-2xl font-bold text-green-800">{totalSales.toLocaleString('id-ID')} ton</p>
               </div>
               <TrendingUp className="w-8 h-8 text-green-600" />
             </div>
@@ -710,7 +724,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-green-600 mb-1">Pembelian ({timePeriod} bulan)</p>
-                <p className="text-2xl font-bold text-green-800">{totalPurchases} ton</p>
+                <p className="text-2xl font-bold text-green-800">{totalPurchases.toLocaleString('id-ID')} ton</p>
               </div>
               <TrendingDown className="w-8 h-8 text-green-600" />
             </div>
@@ -727,11 +741,14 @@ export default function Dashboard() {
         </div>
 
         {/* Main Tabs */}
-        <Tabs defaultValue="stocks" className="space-y-4">
+        <Tabs defaultValue="stocks-bb" className="space-y-4">
           <div className="overflow-x-auto pb-2">
             <TabsList className="inline-flex bg-green-100 p-1 rounded-lg min-w-max">
-              <TabsTrigger value="stocks" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
+              <TabsTrigger value="stocks-bb" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
                 Level Stok BB
+              </TabsTrigger>
+              <TabsTrigger value="stocks-fg" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
+                Level Stok FG
               </TabsTrigger>
               <TabsTrigger value="sales" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
                 Data Penjualan
@@ -753,7 +770,7 @@ export default function Dashboard() {
           </div>
 
           {/* Stock Levels Tab */}
-          <TabsContent value="stocks" className="space-y-4">
+          <TabsContent value="stocks-bb" className="space-y-4">
             <Card className="border-green-200">
               <div className="p-6">
                 
@@ -777,7 +794,7 @@ export default function Dashboard() {
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="font-bold text-green-800">{item.quantity} {item.unit}</p>
+                              <p className="font-bold text-green-800">{item.quantity.toLocaleString('id-ID')} {item.unit}</p>
                             </div>
                           </div>
                         </div>
@@ -804,7 +821,7 @@ export default function Dashboard() {
                           }}
                           labelFormatter={(label) => `Location: ${label}`}
                           formatter={(value, name, props) => [
-                            `${value} ${props.payload?.unit || 'ton'}`,
+                            `${Number(value).toLocaleString('id-ID')} ${props.payload?.unit || 'ton'}`,
                             `Category: ${props.payload?.category || 'N/A'}`
                           ]}
                         />
@@ -908,7 +925,7 @@ export default function Dashboard() {
                           cy="50%"
                           outerRadius={80}
                           dataKey="value"
-                          label={({ name, value }) => `${name}: ${value}t`}
+                          label={({ name, value }) => `${name}: ${Number(value).toLocaleString('id-ID')}t`}
                         >
                           {salesData.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
@@ -923,7 +940,7 @@ export default function Dashboard() {
                 {/* Sales Summary */}
                 <div className="mt-6 p-4 bg-green-50 rounded-lg">
                   <p className="text-green-800">
-                    <strong>Total Penjualan ({timePeriod} bulan):</strong> {totalSales} ton
+                    <strong>Total Penjualan ({timePeriod} bulan):</strong> {totalSales.toLocaleString('id-ID')} ton
                   </p>
                 </div>
               </div>
@@ -995,7 +1012,7 @@ export default function Dashboard() {
                             </Badge>
                           </div>
                           <div className="text-right">
-                            <p className="font-bold text-green-800">{item.value} tons</p>
+                            <p className="font-bold text-green-800">{item.value.toLocaleString('id-ID')} tons</p>
                           </div>
                         </div>
                       </div>
@@ -1006,7 +1023,7 @@ export default function Dashboard() {
                 {/* Purchase Summary */}
                 <div className="mt-6 p-4 bg-green-50 rounded-lg">
                   <p className="text-green-800">
-                    <strong>Total Pembelian ({timePeriod} bulan):</strong> {totalPurchases} ton
+                    <strong>Total Pembelian ({timePeriod} bulan):</strong> {totalPurchases.toLocaleString('id-ID')} ton
                   </p>
                 </div>
               </div>
