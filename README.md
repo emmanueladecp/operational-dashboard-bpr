@@ -80,11 +80,24 @@ A comprehensive internal operations monitoring system designed for agricultural/
 
 For detailed setup instructions, refer to these guides:
 
-- **[Quick Start Guide](QUICK_START.md)** - Complete setup in 5 minutes
-- **[Clerk & Supabase Integration](CLERK_SUPABASE_INTEGRATION.md)** - Authentication setup
-- **[Webhook Setup](WEBHOOK_SETUP_GUIDE.md)** - Webhook configuration
-- **[User Creation Setup](USER_CREATION_SETUP.md)** - User management setup
-- **[Stock Table Setup](STOCK_TABLE_SETUP.md)** - Database schema setup
+- **[Quick Start Guide](docs/QUICK_START.md)** - Complete setup in 5 minutes
+- **[Clerk & Supabase Integration](docs/CLERK_SUPABASE_INTEGRATION.md)** - Authentication setup
+- **[Webhook Setup](docs/WEBHOOK_SETUP_GUIDE.md)** - Webhook configuration
+- **[User Creation Setup](docs/USER_CREATION_SETUP.md)** - User management setup
+- **[Stock Table Setup](docs/STOCK_TABLE_SETUP.md)** - Database schema setup
+
+## 📚 Technical Documentation
+
+For comprehensive technical information, see:
+
+- **[Technical Architecture Overview](docs/TECHNICAL_ARCHITECTURE.md)** - System design and architecture patterns
+- **[Component Architecture Deep Dive](docs/COMPONENT_ARCHITECTURE.md)** - Detailed component design and interactions
+- **[Deployment Architecture Guide](docs/DEPLOYMENT_ARCHITECTURE.md)** - Build processes, environments, and deployment strategies
+- **[API Reference Documentation](docs/API_REFERENCE.md)** - Complete API endpoint documentation
+- **[Edge Function Setup](docs/EDGE_FUNCTION_SETUP.md)** - Serverless function deployment and configuration
+- **[RLS Implementation Guide](docs/RLS_IMPLEMENTATION_GUIDE.md)** - Row Level Security setup and troubleshooting
+- **[Next Steps](docs/NEXT_STEPS.md)** - Implementation roadmap and remaining tasks
+- **[Svix Play Setup](docs/SVIX_PLAY_SETUP.md)** - Webhook testing and debugging guide
 
 ## 🏗️ Architecture
 
@@ -161,16 +174,22 @@ npm run preview  # Preview production build
 ```
 ├── src/
 │   ├── components/          # React components
-│   │   ├── ui/             # Reusable UI components
-│   │   ├── Dashboard.tsx   # Main dashboard component
+│   │   ├── ui/             # Reusable UI components (30+ components)
+│   │   ├── Dashboard.tsx   # Main dashboard component (1,685 lines)
 │   │   └── Login.tsx       # Authentication component
 │   ├── lib/
-│   │   └── supabase.ts     # Supabase client configuration
+│   │   └── supabase.ts     # Supabase client with Clerk integration
 │   └── styles/             # Global styles
 ├── supabase/
-│   └── functions/          # Edge functions
+│   └── functions/          # Edge functions (create-user)
+├── docs/                   # Comprehensive documentation
+│   ├── TECHNICAL_ARCHITECTURE.md    # System design overview
+│   ├── COMPONENT_ARCHITECTURE.md    # Component design deep dive
+│   ├── DEPLOYMENT_ARCHITECTURE.md   # Deployment and infrastructure
+│   ├── API_REFERENCE.md             # Complete API documentation
+│   ├── *.md                         # Setup and configuration guides
 ├── server.js               # Express backend server
-└── *.md                    # Documentation files
+└── README.md               # This file
 ```
 
 ## 🔒 Security Features
@@ -220,4 +239,26 @@ This project is proprietary software for PT. Belitang Panen Raya.
 ---
 
 **Version:** 1.0.0
-**Last Updated:** 2024
+**Last Updated:** 2025
+
+## 📖 Documentation Overview
+
+This project now includes comprehensive documentation organized into two main categories:
+
+### 🚀 Setup & Configuration (`docs/`)
+- **Quick Start Guide** - Get up and running in 5 minutes
+- **Clerk & Supabase Integration** - Authentication and database setup
+- **Webhook Setup** - Automated user synchronization
+- **User Creation Setup** - User management workflows
+- **Stock Table Setup** - Database schema and sample data
+- **Edge Function Setup** - Serverless function deployment
+- **RLS Implementation** - Row Level Security configuration
+- **Svix Play Setup** - Webhook testing and debugging
+
+### 🏗️ Technical Architecture (`docs/`)
+- **Technical Architecture Overview** - System design and technology stack
+- **Component Architecture Deep Dive** - Detailed component analysis
+- **Deployment Architecture Guide** - Infrastructure and deployment strategies
+- **API Reference Documentation** - Complete API endpoint documentation
+
+All documentation is continuously updated to reflect the current state of the system and provides both high-level overviews and detailed technical specifications for developers and system administrators.
