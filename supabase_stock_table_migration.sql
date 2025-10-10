@@ -116,18 +116,18 @@ SELECT
     stock_data.product_type
 FROM (
     VALUES
-    ('Jakarta', 'RICE-001', 'Beras Premium IR64', 1, 'ton', 1, 'Beras Premium', 1.00, 1250.50, 'rice'),
-    ('Jakarta', 'RICE-002', 'Beras Medium IR42', 1, 'ton', 2, 'Beras Medium', 1.00, 890.25, 'rice'),
-    ('Jakarta', 'RICE-003', 'Beras Organik', 1, 'ton', 3, 'Beras Organik', 1.00, 450.75, 'rice'),
-    ('Surabaya', 'RICE-004', 'Beras Mentah - Surabaya', 1, 'ton', 4, 'Bahan Baku', 1.00, 2100.00, 'rice'),
-    ('Surabaya', 'RICE-005', 'Beras Premium - Surabaya', 1, 'ton', 1, 'Beras Premium', 1.00, 675.30, 'rice'),
-    ('Surabaya', 'RICE-006', 'Beras Standar - Surabaya', 1, 'ton', 5, 'Beras Standar', 1.00, 320.80, 'rice'),
-    ('Bandung', 'RICE-007', 'Beras Organik - Bandung', 1, 'ton', 3, 'Beras Organik', 1.00, 180.45, 'rice'),
-    ('Bandung', 'RICE-008', 'Beras Premium - Bandung', 1, 'ton', 1, 'Beras Premium', 1.00, 520.60, 'rice'),
-    ('Medan', 'RICE-009', 'Beras Mentah - Medan', 1, 'ton', 4, 'Bahan Baku', 1.00, 950.20, 'rice'),
-    ('Medan', 'RICE-010', 'Beras Premium - Medan', 1, 'ton', 1, 'Beras Premium', 1.00, 380.90, 'rice'),
-    ('Yogyakarta', 'RICE-011', 'Beras Standar - Yogya', 1, 'ton', 5, 'Beras Standar', 1.00, 290.15, 'rice'),
-    ('Yogyakarta', 'RICE-012', 'Beras Organik - Yogya', 1, 'ton', 3, 'Beras Organik', 1.00, 145.35, 'rice')
+    ('Jakarta', 'RICE-001', 'Beras Premium IR64', 1, 'kg', 1, 'Beras Premium', 1.00, 1250.50, 'rice'),
+    ('Jakarta', 'RICE-002', 'Beras Medium IR42', 1, 'kg', 2, 'Beras Medium', 1.00, 890.25, 'rice'),
+    ('Jakarta', 'RICE-003', 'Beras Organik', 1, 'kg', 3, 'Beras Organik', 1.00, 450.75, 'rice'),
+    ('Surabaya', 'RICE-004', 'Beras Mentah - Surabaya', 1, 'kg', 4, 'Bahan Baku', 1.00, 2100.00, 'rice'),
+    ('Surabaya', 'RICE-005', 'Beras Premium - Surabaya', 1, 'kg', 1, 'Beras Premium', 1.00, 675.30, 'rice'),
+    ('Surabaya', 'RICE-006', 'Beras Standar - Surabaya', 1, 'kg', 5, 'Beras Standar', 1.00, 320.80, 'rice'),
+    ('Bandung', 'RICE-007', 'Beras Organik - Bandung', 1, 'kg', 3, 'Beras Organik', 1.00, 180.45, 'rice'),
+    ('Bandung', 'RICE-008', 'Beras Premium - Bandung', 1, 'kg', 1, 'Beras Premium', 1.00, 520.60, 'rice'),
+    ('Medan', 'RICE-009', 'Beras Mentah - Medan', 1, 'kg', 4, 'Bahan Baku', 1.00, 950.20, 'rice'),
+    ('Medan', 'RICE-010', 'Beras Premium - Medan', 1, 'kg', 1, 'Beras Premium', 1.00, 380.90, 'rice'),
+    ('Yogyakarta', 'RICE-011', 'Beras Standar - Yogya', 1, 'kg', 5, 'Beras Standar', 1.00, 290.15, 'rice'),
+    ('Yogyakarta', 'RICE-012', 'Beras Organik - Yogya', 1, 'kg', 3, 'Beras Organik', 1.00, 145.35, 'rice')
 ) AS stock_data(location, m_product_id, name, c_uom_id, uom_name, m_product_category_id, product_category_name, weight, sumqtyonhand, product_type)
 JOIN public.master_locations ml ON ml.name = stock_data.location AND ml.is_active = true
 
@@ -150,7 +150,7 @@ COMMENT ON COLUMN public.stock.location IS 'Physical location name (denormalized
 COMMENT ON COLUMN public.stock.m_product_id IS 'Product identifier code';
 COMMENT ON COLUMN public.stock.name IS 'Product name/description';
 COMMENT ON COLUMN public.stock.c_uom_id IS 'Unit of measure identifier';
-COMMENT ON COLUMN public.stock.uom_name IS 'Unit of measure name (kg, ton, etc.)';
+COMMENT ON COLUMN public.stock.uom_name IS 'Unit of measure name (kg, etc.)';
 COMMENT ON COLUMN public.stock.m_product_category_id IS 'Product category identifier';
 COMMENT ON COLUMN public.stock.product_category_name IS 'Product category name';
 COMMENT ON COLUMN public.stock.weight IS 'Weight per unit in the specified UOM';

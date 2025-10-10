@@ -755,6 +755,7 @@ export default function Dashboard() {
   );
 
 
+
   const totalStock = useMemo(() => totalStockBB + totalStockFG, [totalStockBB, totalStockFG]);
 
   const canAccessRestricted = userRole === 'SUPERADMIN_ROLE';
@@ -795,7 +796,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-green-600 mb-1">Total Stok BB</p>
-                <p className="text-2xl font-bold text-green-800">{totalStockBB.toLocaleString('id-ID')} ton</p>
+                <p className="text-2xl font-bold text-green-800">{totalStockBB.toLocaleString('id-ID')} Kilogram</p>
               </div>
               <Package className="w-8 h-8 text-green-600" />
             </div>
@@ -804,7 +805,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-green-600 mb-1">Total Stok FG</p>
-                <p className="text-2xl font-bold text-green-800">{totalStockFG.toLocaleString('id-ID')} ton</p>
+                <p className="text-2xl font-bold text-green-800">{totalStockFG.toLocaleString('id-ID')} Kilogram</p>
               </div>
               <Package className="w-8 h-8 text-green-600" />
             </div>
@@ -813,7 +814,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-green-600 mb-1">Penjualan ({timePeriod} bulan)</p>
-                <p className="text-2xl font-bold text-green-800">{totalSales.toLocaleString('id-ID')} ton</p>
+                <p className="text-2xl font-bold text-green-800">{totalSales.toLocaleString('id-ID')} Kilogram</p>
               </div>
               <TrendingUp className="w-8 h-8 text-green-600" />
             </div>
@@ -823,7 +824,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-green-600 mb-1">Pembelian ({timePeriod} bulan)</p>
-                <p className="text-2xl font-bold text-green-800">{totalPurchases.toLocaleString('id-ID')} ton</p>
+                <p className="text-2xl font-bold text-green-800">{totalPurchases.toLocaleString('id-ID')} Kilogram</p>
               </div>
               <TrendingDown className="w-8 h-8 text-green-600" />
             </div>
@@ -968,7 +969,7 @@ export default function Dashboard() {
                           }}
                           labelFormatter={(label) => `Location: ${label}`}
                           formatter={(value, name, props) => [
-                            `${Number(value).toLocaleString('id-ID')} ${props.payload?.unit || 'ton'}`,
+                            `${Number(value).toLocaleString('id-ID')} ${props.payload?.unit || 'Kilogram'}`,
                             `Category: ${props.payload?.category || 'N/A'}`
                           ]}
                         />
@@ -1109,7 +1110,7 @@ export default function Dashboard() {
                             }}
                             labelFormatter={(label) => `Location: ${label}`}
                             formatter={(value, name, props) => [
-                              `${Number(value).toLocaleString('id-ID')} ${props.payload?.unit || 'ton'}`,
+                              `${Number(value).toLocaleString('id-ID')} ${props.payload?.unit || 'Kilogram'}`,
                               `Category: ${props.payload?.category || 'N/A'}`
                             ]}
                           />
@@ -1236,7 +1237,7 @@ export default function Dashboard() {
                 {/* Sales Summary */}
                 <div className="mt-6 p-4 bg-green-50 rounded-lg">
                   <p className="text-green-800">
-                    <strong>Total Penjualan ({timePeriod} bulan):</strong> {totalSales.toLocaleString('id-ID')} ton
+                    <strong>Total Penjualan ({timePeriod} bulan):</strong> {totalSales.toLocaleString('id-ID')} Kilogram
                   </p>
                 </div>
               </div>
@@ -1308,7 +1309,7 @@ export default function Dashboard() {
                             </Badge>
                           </div>
                           <div className="text-right">
-                            <p className="font-bold text-green-800">{item.value.toLocaleString('id-ID')} tons</p>
+                            <p className="font-bold text-green-800">{item.value.toLocaleString('id-ID')} Kilogram</p>
                           </div>
                         </div>
                       </div>
@@ -1319,7 +1320,7 @@ export default function Dashboard() {
                 {/* Purchase Summary */}
                 <div className="mt-6 p-4 bg-green-50 rounded-lg">
                   <p className="text-green-800">
-                    <strong>Total Pembelian ({timePeriod} bulan):</strong> {totalPurchases.toLocaleString('id-ID')} ton
+                    <strong>Total Pembelian ({timePeriod} bulan):</strong> {totalPurchases.toLocaleString('id-ID')} Kilogram
                   </p>
                 </div>
               </div>
