@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Internal Operation System</string>
+    <string name="title_activity_main">Internal Operation System</string>
+    <string name="package_name">com.bpr.internal</string>
+    <string name="custom_url_scheme">com.bpr.internal</string>
+</resources>

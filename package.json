@@ -3,6 +3,9 @@
       "version": "0.1.0",
       "private": true,
       "dependencies": {
+            "@capacitor/android": "^7.4.3",
+            "@capacitor/cli": "^7.4.3",
+            "@capacitor/core": "^7.4.3",
             "@clerk/clerk-react": "^5.48.1",
             "@clerk/clerk-sdk-node": "^4.13.23",
             "@radix-ui/react-accordion": "^1.2.3",
@@ -45,6 +48,7 @@
             "react": "^18.3.1",
             "react-day-picker": "^8.10.1",
             "react-dom": "^18.3.1",
+            "react-error-boundary": "^6.0.0",
             "react-hook-form": "^7.55.0",
             "react-resizable-panels": "^2.1.7",
             "recharts": "^2.15.2",
@@ -59,6 +63,7 @@
             "@types/react-dom": "^19.1.9",
             "@vitejs/plugin-react-swc": "^3.10.2",
             "supabase": "^2.48.3",
+            "terser": "^5.44.0",
             "vite": "6.3.5"
       },
       "scripts": {

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#030213</color>
+    <color name="colorPrimaryDark">#030213</color>
+    <color name="colorAccent">#3DDC84</color>
+    <color name="colorPrimaryLight">#3DDC84</color>
+    <color name="colorBackground">#FFFFFF</color>
+    <color name="colorSurface">#FFFFFF</color>
+    <color name="colorError">#D4183D</color>
+    <color name="colorOnPrimary">#FFFFFF</color>
+    <color name="colorOnSecondary">#030213</color>
+    <color name="colorOnBackground">#030213</color>
+    <color name="colorOnError">#FFFFFF</color>
+    <color name="colorOnSurface">#030213</color>
+</resources>

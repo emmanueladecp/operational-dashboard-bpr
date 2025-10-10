@@ -53,6 +53,50 @@
     build: {
       target: 'esnext',
       outDir: 'build',
+      rollupOptions: {
+        output: {
+          manualChunks: (id) => {
+            // Vendor chunk for React and core libraries
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'vendor';
+            }
+            // UI library chunk for Radix UI components
+            if (id.includes('@radix-ui')) {
+              return 'ui';
+            }
+            // Supabase chunk
+            if (id.includes('@supabase')) {
+              return 'supabase';
+            }
+            // Clerk chunk
+            if (id.includes('@clerk')) {
+              return 'clerk';
+            }
+            // Utility libraries chunk
+            if (id.includes('clsx') || id.includes('class-variance-authority') ||
+                id.includes('tailwind-merge') || id.includes('lucide-react')) {
+              return 'utils';
+            }
+            // Node modules chunk for other dependencies
+            if (id.includes('node_modules')) {
+              return 'vendor';
+            }
+          }
+        }
+      },
+      // Optimize chunk size warning limit for mobile
+      chunkSizeWarningLimit: 600,
+      // Enable source maps for production debugging
+      sourcemap: false,
+      // Minify for better performance
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: true,
+          drop_debugger: true,
+          pure_funcs: ['console.log', 'console.info', 'console.debug']
+        }
+      }
     },
     server: {
       port: 3000,
