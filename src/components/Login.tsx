@@ -1,7 +1,13 @@
 import { Button } from "./ui/button";
 import { SignInButton, SignUpButton } from "@clerk/clerk-react";
+import { useEffect } from "react";
 
 export default function Login() {
+  useEffect(() => {
+    console.log("Login component mounted");
+    console.log("Checking if login-background class exists:", document.querySelector('.login-background'));
+    console.log("Computed styles for login-background:", window.getComputedStyle(document.querySelector('.login-background') || document.body).backgroundImage);
+  }, []);
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4">
       {/* Background Image */}
