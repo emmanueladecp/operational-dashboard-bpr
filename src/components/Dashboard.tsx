@@ -796,7 +796,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-green-600 mb-1">Total Stok BB</p>
-                <p className="text-2xl font-bold text-green-800">{totalStockBB.toLocaleString('id-ID')} Kilogram</p>
+                <p className="text-2xl font-bold text-green-800">{ (totalStockBB/1000).toLocaleString('id-ID')} Ton</p>
               </div>
               <Package className="w-8 h-8 text-green-600" />
             </div>
@@ -805,7 +805,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-green-600 mb-1">Total Stok FG</p>
-                <p className="text-2xl font-bold text-green-800">{totalStockFG.toLocaleString('id-ID')} Kilogram</p>
+                <p className="text-2xl font-bold text-green-800">{( totalStockFG / 1000).toLocaleString('id-ID')} Ton</p>
               </div>
               <Package className="w-8 h-8 text-green-600" />
             </div>
@@ -895,7 +895,7 @@ export default function Dashboard() {
                         </Label>
                       </div>
                       <div className="flex flex-wrap gap-2 ml-2">
-                        {allLocations.filter(location => location.is_active).map((location) => (
+                        {allLocations.filter(location => location.is_active).sort((a, b) => a.name.localeCompare(b.name)).map((location) => (
                           <div key={location.id} className="flex items-center space-x-1">
                             <Checkbox
                               id={`location-bb-${location.id}`}
@@ -1036,7 +1036,7 @@ export default function Dashboard() {
                         </Label>
                       </div>
                       <div className="flex flex-wrap gap-2 ml-2">
-                        {allLocations.filter(location => location.is_active).map((location) => (
+                        {allLocations.filter(location => location.is_active).sort((a, b) => a.name.localeCompare(b.name)).map((location) => (
                           <div key={location.id} className="flex items-center space-x-1">
                             <Checkbox
                               id={`location-fg-${location.id}`}
