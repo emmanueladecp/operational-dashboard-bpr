@@ -56,6 +56,8 @@ export default function Dashboard() {
   const [stockData, setStockData] = useState<any[]>([]);
   const [isLoadingStock, setIsLoadingStock] = useState(true);
   const [locationFilter, setLocationFilter] = useState<string[]>(['all']);
+  const [selectedStockItem, setSelectedStockItem] = useState<any>(null);
+  const [isStockDetailDialogOpen, setIsStockDetailDialogOpen] = useState(false);
 
   // Create authenticated client
   const supabaseClient = useMemo(() => {
@@ -708,23 +710,29 @@ export default function Dashboard() {
 
   const handleDeleteLocation = async (locationId: number) => {
     if (!supabaseClient) return;
-    
+
     const { error } = await supabaseClient
       .from('master_locations')
       .delete()
       .eq('id', locationId);
-  
+
     if (error) {
       console.error('Error deleting location:', error);
       return;
     }
-  
+
     // Refresh locations
     const { data: locationsData } = await supabaseClient
       .from('master_locations')
       .select('*');
 
     setAllLocations(locationsData || []);
+  };
+
+  const handleStockItemClick = (item: any) => {
+    console.log('Stock item clicked:', item);
+    setSelectedStockItem(item);
+    setIsStockDetailDialogOpen(true);
   };
 
   const filteredUsers = useMemo(() =>
@@ -931,7 +939,11 @@ export default function Dashboard() {
                       <div className="text-center py-8 text-green-600">Tidak ada data stok untuk lokasi Anda</div>
                     ) : (
                       processedStockData.map((item, index) => (
-                        <div key={index} className="p-4 bg-green-50 rounded-lg border border-green-100">
+                        <div
+                          key={index}
+                          className="p-4 bg-green-50 rounded-lg border border-green-100 cursor-pointer hover:bg-green-100 transition-colors"
+                          onClick={() => handleStockItemClick(item)}
+                        >
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                             <div className="flex-1">
                               <h4 className="font-medium text-green-800">{item.category}</h4>
@@ -1072,7 +1084,11 @@ export default function Dashboard() {
                       <div className="text-center py-8 text-green-600">Tidak ada data stok finished goods untuk lokasi Anda</div>
                     ) : (
                       processedStockDataFG.map((item, index) => (
-                        <div key={index} className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                        <div
+                          key={index}
+                          className="p-4 bg-blue-50 rounded-lg border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
+                          onClick={() => handleStockItemClick(item)}
+                        >
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                             <div className="flex-1">
                               <h4 className="font-medium text-blue-800">{item.category}</h4>
@@ -1679,6 +1695,61 @@ export default function Dashboard() {
               </Card>
             </TabsContent>
           )}
+
+          {/* Stock Detail Dialog */}
+          <Dialog open={isStockDetailDialogOpen} onOpenChange={setIsStockDetailDialogOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Detail Stok</DialogTitle>
+              </DialogHeader>
+              {selectedStockItem && (
+                <div className="space-y-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium text-gray-600">Kategori</Label>
+                      <p className="font-semibold text-lg">{selectedStockItem.category}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-600">Lokasi</Label>
+                      <p className="font-semibold text-lg">{selectedStockItem.location}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium text-gray-600">Jumlah</Label>
+                      <p className="font-bold text-2xl text-green-800">
+                        {selectedStockItem.quantity.toLocaleString('id-ID')} {selectedStockItem.unit}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-600">Satuan</Label>
+                      <p className="font-semibold">{selectedStockItem.unit}</p>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t">
+                    <div className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
+                      selectedStockItem.product_type === 'RAW MATERIAL'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {selectedStockItem.product_type === 'RAW MATERIAL' ? 'Bahan Baku (BB)' : 'Barang Jadi (FG)'}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsStockDetailDialogOpen(false)}
+                    >
+                      Tutup
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
         </Tabs>
       </main>
     </div>
