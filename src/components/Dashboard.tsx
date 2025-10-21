@@ -853,36 +853,22 @@ export default function Dashboard() {
     setAllLocations(locationsData || []);
   };
 
-  const handleStockItemClick = async (item: any, product_type: string) => {
+  const handleStockItemClick = (item: any, product_type: string) => {
     const updatedItem = { ...item, product_type };
-    console.log('Stock item clicked:', updatedItem);
+    //console.log('Stock item clicked:', updatedItem);
+    //console.log('stockData:', stockData);
     setSelectedStockItem(updatedItem);
-    setIsLoadingDetailedStock(true);
 
-    try {
-      // Fetch detailed stock items for the selected category and location
-      if (supabaseClient) {
-        const { data: detailedData, error } = await supabaseClient
-          .from('stock')
-          .select('m_product_id, name, sumqtyonhand, uom_name, weight, product_type')
-          .eq('product_category_name', item.category)
-          .eq('location', item.location)
-          .eq('product_type', product_type === 'RAW MATERIAL' ? 'RAW MATERIAL' : 'FINISHED GOODS') // Adjust based on your data
-          .order('name');
+    // Filter existing stockData instead of querying database
+    const filteredDetailedData = stockData.filter(stockItem =>
+      stockItem.product_category_name === item.category &&
+      stockItem.location === item.location &&
+      stockItem.product_type === (product_type === 'RAW MATERIAL' ? 'RAW MATERIAL' : 'FINISHED GOODS')
+    );
 
-        if (error) {
-          console.error('Error fetching detailed stock data:', error);
-        } else {
-          console.log('Detailed stock data:', detailedData);
-          setDetailedStockItems(detailedData || []);
-        }
-      }
-    } catch (error) {
-      console.error('Error in handleStockItemClick:', error);
-    } finally {
-      setIsLoadingDetailedStock(false);
-      setIsStockDetailDialogOpen(true);
-    }
+    //console.log('Filtered detailed stock data:', filteredDetailedData);
+    setDetailedStockItems(filteredDetailedData);
+    setIsStockDetailDialogOpen(true);
   };
 
   const filteredUsers = useMemo(() =>
