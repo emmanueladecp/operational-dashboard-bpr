@@ -17,6 +17,65 @@ import { Package, TrendingUp, TrendingDown, MapPin, Plus, Edit, Trash2, Search, 
 import { useSession } from "@clerk/clerk-react";
 import { createClerkSupabaseClient, resetClerkSupabaseClient } from "../lib/supabase";
 
+// Cache clearing utility for logout
+const clearServiceWorkerCache = async () => {
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    console.log('[Logout] Clearing service worker cache...');
+
+    return new Promise((resolve) => {
+      // Set up timeout to prevent hanging
+      const timeout = setTimeout(() => {
+        console.warn('[Logout] Cache clearing timeout - proceeding with logout');
+        resolve({ timeout: true, message: 'Cache clearing timeout' });
+      }, 3000); // 3 second timeout
+
+      const messageChannel = new MessageChannel();
+
+      messageChannel.port1.onmessage = function(event) {
+        clearTimeout(timeout); // Clear timeout on successful response
+
+        if (event.data && event.data.type === 'CACHE_CLEARED') {
+          if (event.data.success) {
+            console.log('[Logout] Service worker cache cleared successfully:', event.data);
+          } else {
+            console.warn('[Logout] Service worker cache clearing failed:', event.data.error);
+          }
+          resolve(event.data);
+        } else {
+          console.log('[Logout] Unexpected message from service worker:', event.data);
+          resolve(event.data);
+        }
+      };
+
+      messageChannel.port1.onmessageerror = function(error) {
+        clearTimeout(timeout); // Clear timeout on error
+        console.error('[Logout] Error clearing service worker cache:', error);
+        resolve({ error: 'Failed to clear cache', timeout: false });
+      };
+
+      // Send cache clear request to service worker
+      try {
+        if (navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({
+            type: 'CLEAR_CACHE'
+          }, [messageChannel.port2]);
+        } else {
+          clearTimeout(timeout);
+          console.error('[Logout] Service worker controller is null');
+          resolve({ error: 'Service worker controller is null' });
+        }
+      } catch (postError) {
+        clearTimeout(timeout);
+        console.error('[Logout] Failed to send message to service worker:', postError);
+        resolve({ error: 'Failed to send message to service worker' });
+      }
+    });
+  } else {
+    console.log('[Logout] No active service worker found');
+    return Promise.resolve({ message: 'No active service worker' });
+  }
+};
+
 
 interface User {
   id: string;
@@ -37,6 +96,67 @@ export default function Dashboard() {
   const { session } = useSession();
   const { user, isLoaded } = useUser();
   const { signOut: clerkSignOut } = useAuth();
+
+  // Custom logout handler that clears cache before signing out
+  const handleLogout = async () => {
+    let logoutButton: HTMLButtonElement | null = null;
+
+    try {
+      console.log('[Logout] Starting logout process...');
+
+      // Show loading state or disable button
+      logoutButton = document.querySelector('[data-logout-button]') as HTMLButtonElement;
+      if (logoutButton) {
+        logoutButton.disabled = true;
+        logoutButton.textContent = 'Clearing Cache...';
+      }
+
+      // Clear service worker cache first (with timeout protection)
+      console.log('[Logout] Clearing service worker cache...');
+      const cacheResult = await clearServiceWorkerCache();
+
+      // Check if cache clearing had issues (type-safe checking)
+      if (cacheResult && typeof cacheResult === 'object' && 'timeout' in cacheResult && cacheResult.timeout) {
+        console.warn('[Logout] Cache clearing timed out, proceeding with logout anyway');
+      } else if (cacheResult && typeof cacheResult === 'object' && 'error' in cacheResult && cacheResult.error) {
+        console.warn('[Logout] Cache clearing failed, proceeding with logout anyway:', cacheResult.error);
+      } else {
+        console.log('[Logout] Cache cleared successfully');
+      }
+
+      // Update button text
+      if (logoutButton) {
+        logoutButton.textContent = 'Signing Out...';
+      }
+
+      // Then sign out from Clerk
+      console.log('[Logout] Signing out from Clerk...');
+      await clerkSignOut();
+
+      console.log('[Logout] Logout process completed successfully');
+    } catch (error) {
+      console.error('[Logout] Error during logout process:', error);
+
+      // Even if cache clearing fails, still try to sign out
+      try {
+        await clerkSignOut();
+      } catch (signOutError) {
+        console.error('[Logout] Error during Clerk sign out:', signOutError);
+        alert('Error during logout. Please refresh the page and try again.');
+      }
+    } finally {
+      // Re-enable button in case of any error
+      if (logoutButton) {
+        logoutButton.disabled = false;
+        logoutButton.textContent = 'Logout';
+      }
+    }
+  };
+
+  // Override the default signOut to use our custom handler
+  const customSignOut = async () => {
+    await handleLogout();
+  };
   const [userRole, setUserRole] = useState<'NO_ROLE' | 'SUPERADMIN_ROLE' | 'BOD_ROLE' | 'SALES_MANAGER_ROLE' | 'SALES_SUPERVISOR_ROLE' | 'AUDITOR_ROLE' | null>(null);
   const [currentUserLocations, setCurrentUserLocations] = useState<number[]>([]);
   const [allLocations, setAllLocations] = useState<Location[]>([]);
@@ -729,9 +849,10 @@ export default function Dashboard() {
     setAllLocations(locationsData || []);
   };
 
-  const handleStockItemClick = (item: any, stock_type: string) => {
-    console.log('Stock item clicked:', item, 'Type:', stock_type);
-    const updatedItem = { ...item, stock_type };
+  const handleStockItemClick = (item: any, product_type: string) => {
+    
+    const updatedItem = { ...item, product_type };
+    console.log('updated Item:', updatedItem);
     setSelectedStockItem(updatedItem);
     setIsStockDetailDialogOpen(true);
   };
@@ -788,11 +909,24 @@ export default function Dashboard() {
                 <Package className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-green-800">Sistem Monitoring</h1>
-                <p className="text-sm text-green-600">Dashboard Operasional</p>
+                <h1 className="text-xl font-bold text-green-800">Belitang Operational Dashboard</h1>
+                {/* <p className="text-sm text-green-600">Dashboard Operasional</p> */}
               </div>
             </div>
-            <UserButton afterSignOutUrl="/" />
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-green-700">
+                Welcome, {user?.firstName || user?.username || 'User'}
+              </span>
+              <Button
+                onClick={handleLogout}
+                variant="outline"
+                size="sm"
+                data-logout-button
+                className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+              >
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -943,7 +1077,7 @@ export default function Dashboard() {
                         <div
                           key={index}
                           className="p-4 bg-green-50 rounded-lg border border-green-100 cursor-pointer hover:bg-green-100 transition-colors"
-                          onClick={() => handleStockItemClick(item, "BB")}
+                          onClick={() => handleStockItemClick(item, "RAW MATERIAL")}
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                             <div className="flex-1">
@@ -1088,7 +1222,7 @@ export default function Dashboard() {
                         <div
                           key={index}
                           className="p-4 bg-blue-50 rounded-lg border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
-                          onClick={() => handleStockItemClick(item, "FG")}
+                          onClick={() => handleStockItemClick(item, "FINISHED GOODS")}
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                             <div className="flex-1">
