@@ -124,15 +124,52 @@ async function cacheFirst(request) {
 
 // Network First Strategy (for API calls)
 async function networkFirst(request) {
+  console.log('[SW] Network first request:', {
+    method: request.method,
+    url: request.url,
+    headers: Object.fromEntries(request.headers.entries()),
+    mode: request.mode,
+    credentials: request.credentials
+  });
+
   try {
     const response = await fetch(request);
+    console.log('[SW] Network response:', {
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries()),
+      type: response.type,
+      url: response.url
+    });
+
     if (response.ok) {
-      const cache = await caches.open(API_CACHE);
-      cache.put(request, response.clone());
+      // Only cache GET and HEAD requests - Cache API doesn't support other methods
+      if (request.method === 'GET' || request.method === 'HEAD') {
+        try {
+          console.log('[SW] Attempting to cache response for:', request.method, request.url);
+          const cache = await caches.open(API_CACHE);
+          await cache.put(request, response.clone());
+          console.log('[SW] Successfully cached response');
+        } catch (cacheError) {
+          console.error('[SW] Cache error details:', {
+            name: cacheError.name,
+            message: cacheError.message,
+            stack: cacheError.stack
+          });
+        }
+      } else {
+        console.log('[SW] Skipping cache for non-cacheable method:', request.method);
+      }
     }
     return response;
   } catch (error) {
-    console.log('[SW] Network failed, trying cache');
+    console.error('[SW] Network error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
+    console.log('[SW] Network failed, trying cache for:', request.method, request.url);
     const cached = await caches.match(request);
     if (cached) {
       return cached;

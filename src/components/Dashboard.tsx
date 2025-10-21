@@ -130,8 +130,8 @@ export default function Dashboard() {
           setUserRole(data.role);
           const userLocations = (data.locations || []).map((loc: any) => Number(loc)); // Convert string IDs to numbers
           setCurrentUserLocations(userLocations);
-          console.log('Current User Role:', data.role);
-          console.log('Current User Locations (original):', data.locations, 'Converted:', userLocations);
+          //console.log('Current User Role:', data.role);
+          //console.log('Current User Locations (original):', data.locations, 'Converted:', userLocations);
         }
       };
 
@@ -177,10 +177,10 @@ export default function Dashboard() {
         setAllLocations(allLocationsData);
 
         // Debug: Log location IDs to help identify issues
-        console.log('All locations fetched:', allLocationsData.map(l => ({ id: l.id, name: l.name, is_active: l.is_active })));
-        console.log('Location 1000007 exists:', allLocationsData.some(l => l.id === 1000007));
-        const location1000007 = allLocationsData.find(l => l.id === 1000007);
-        console.log('Location 1000007 details:', location1000007);
+        //console.log('All locations fetched:', allLocationsData.map(l => ({ id: l.id, name: l.name, is_active: l.is_active })));
+        //console.log('Location 1000007 exists:', allLocationsData.some(l => l.id === 1000007));
+        //const location1000007 = allLocationsData.find(l => l.id === 1000007);
+        //console.log('Location 1000007 details:', location1000007);
       };
 
       fetchData();
@@ -191,7 +191,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (supabaseClient && allLocations.length === 0) {
       const fetchLocations = async () => {
-        console.log('Fetching locations for lookup...');
+        //console.log('Fetching locations for lookup...');
         const { data: locationsData, error: locationsError } = await supabaseClient
           .from('master_locations')
           .select('*');
@@ -203,7 +203,7 @@ export default function Dashboard() {
 
         const allLocationsData = locationsData || [];
         setAllLocations(allLocationsData);
-        console.log('Locations for lookup fetched:', allLocationsData.length, 'locations');
+        //console.log('Locations for lookup fetched:', allLocationsData.length, 'locations');
       };
 
       fetchLocations();
@@ -497,8 +497,8 @@ export default function Dashboard() {
       return locationIds.map(id => `Loading... (${id})`);
     }
 
-    console.log("ALL LOCATION ", allLocations.length, "locations:", allLocations.map(l => ({ id: l.id, name: l.name })));
-    console.log("Looking for location IDs:", locationIds);
+    //console.log("ALL LOCATION ", allLocations.length, "locations:", allLocations.map(l => ({ id: l.id, name: l.name })));
+    //console.log("Looking for location IDs:", locationIds);
 
     return locationIds.map(id => {
       // Ensure ID is a number for comparison
@@ -729,9 +729,10 @@ export default function Dashboard() {
     setAllLocations(locationsData || []);
   };
 
-  const handleStockItemClick = (item: any) => {
-    console.log('Stock item clicked:', item);
-    setSelectedStockItem(item);
+  const handleStockItemClick = (item: any, stock_type: string) => {
+    console.log('Stock item clicked:', item, 'Type:', stock_type);
+    const updatedItem = { ...item, stock_type };
+    setSelectedStockItem(updatedItem);
     setIsStockDetailDialogOpen(true);
   };
 
@@ -942,7 +943,7 @@ export default function Dashboard() {
                         <div
                           key={index}
                           className="p-4 bg-green-50 rounded-lg border border-green-100 cursor-pointer hover:bg-green-100 transition-colors"
-                          onClick={() => handleStockItemClick(item)}
+                          onClick={() => handleStockItemClick(item, "BB")}
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                             <div className="flex-1">
@@ -1087,7 +1088,7 @@ export default function Dashboard() {
                         <div
                           key={index}
                           className="p-4 bg-blue-50 rounded-lg border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
-                          onClick={() => handleStockItemClick(item)}
+                          onClick={() => handleStockItemClick(item, "FG")}
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                             <div className="flex-1">
