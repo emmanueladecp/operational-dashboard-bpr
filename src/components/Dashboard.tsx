@@ -178,6 +178,10 @@ export default function Dashboard() {
   const [locationFilter, setLocationFilter] = useState<string[]>(['all']);
   const [selectedStockItem, setSelectedStockItem] = useState<any>(null);
   const [isStockDetailDialogOpen, setIsStockDetailDialogOpen] = useState(false);
+  const [detailedStockItems, setDetailedStockItems] = useState<any[]>([]);
+  const [isLoadingDetailedStock, setIsLoadingDetailedStock] = useState(false);
+  const [productSearchTerm, setProductSearchTerm] = useState('');
+  const [productSortBy, setProductSortBy] = useState('name');
 
   // Create authenticated client
   const supabaseClient = useMemo(() => {
@@ -849,12 +853,36 @@ export default function Dashboard() {
     setAllLocations(locationsData || []);
   };
 
-  const handleStockItemClick = (item: any, product_type: string) => {
-    
+  const handleStockItemClick = async (item: any, product_type: string) => {
     const updatedItem = { ...item, product_type };
-    console.log('updated Item:', updatedItem);
+    console.log('Stock item clicked:', updatedItem);
     setSelectedStockItem(updatedItem);
-    setIsStockDetailDialogOpen(true);
+    setIsLoadingDetailedStock(true);
+
+    try {
+      // Fetch detailed stock items for the selected category and location
+      if (supabaseClient) {
+        const { data: detailedData, error } = await supabaseClient
+          .from('stock')
+          .select('m_product_id, name, sumqtyonhand, uom_name, weight, product_type')
+          .eq('product_category_name', item.category)
+          .eq('location', item.location)
+          .eq('product_type', product_type === 'RAW MATERIAL' ? 'RAW MATERIAL' : 'FINISHED GOODS') // Adjust based on your data
+          .order('name');
+
+        if (error) {
+          console.error('Error fetching detailed stock data:', error);
+        } else {
+          console.log('Detailed stock data:', detailedData);
+          setDetailedStockItems(detailedData || []);
+        }
+      }
+    } catch (error) {
+      console.error('Error in handleStockItemClick:', error);
+    } finally {
+      setIsLoadingDetailedStock(false);
+      setIsStockDetailDialogOpen(true);
+    }
   };
 
   const filteredUsers = useMemo(() =>
@@ -883,6 +911,40 @@ export default function Dashboard() {
     processedStockDataFG.reduce((sum, item) => sum + item.quantity, 0),
     [processedStockDataFG]
   );
+
+  // Filter and sort detailed stock items
+  const filteredAndSortedProducts = useMemo(() => {
+    if (!detailedStockItems.length) return [];
+
+    let filtered = detailedStockItems;
+
+    // Apply search filter
+    if (productSearchTerm.trim()) {
+      const searchLower = productSearchTerm.toLowerCase();
+      filtered = filtered.filter(product =>
+        product.name.toLowerCase().includes(searchLower) ||
+        product.m_product_id.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (productSortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'code':
+          return a.m_product_id.localeCompare(b.m_product_id);
+        case 'quantity-high':
+          return Number(b.sumqtyonhand) - Number(a.sumqtyonhand);
+        case 'quantity-low':
+          return Number(a.sumqtyonhand) - Number(b.sumqtyonhand);
+        default:
+          return 0;
+      }
+    });
+
+    return filtered;
+  }, [detailedStockItems, productSearchTerm, productSortBy]);
 
 
 
@@ -1832,59 +1894,143 @@ export default function Dashboard() {
           )}
 
           {/* Stock Detail Dialog */}
-          <Dialog open={isStockDetailDialogOpen} onOpenChange={setIsStockDetailDialogOpen}>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Detail Stok</DialogTitle>
-              </DialogHeader>
-              {selectedStockItem && (
-                <div className="space-y-4 py-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-medium text-gray-600">Kategori</Label>
-                      <p className="font-semibold text-lg">{selectedStockItem.category}</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-600">Lokasi</Label>
-                      <p className="font-semibold text-lg">{selectedStockItem.location}</p>
-                    </div>
-                  </div>
+           <Dialog open={isStockDetailDialogOpen} onOpenChange={setIsStockDetailDialogOpen}>
+             <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-5xl max-h-[85vh] overflow-y-auto">
+               <DialogHeader>
+                 <DialogTitle className="text-lg sm:text-xl">Detail Stok - {selectedStockItem?.category} ({selectedStockItem?.location})</DialogTitle>
+               </DialogHeader>
+               {selectedStockItem && (
+                 <div className="space-y-4 py-4">
+                   {/* Summary Section */}
+                   <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                       <div className="space-y-1">
+                         <Label className="text-xs sm:text-sm font-medium text-gray-600">Kategori</Label>
+                         <p className="font-semibold text-sm sm:text-base lg:text-lg break-words">{selectedStockItem.category}</p>
+                       </div>
+                       <div className="space-y-1">
+                         <Label className="text-xs sm:text-sm font-medium text-gray-600">Lokasi</Label>
+                         <p className="font-semibold text-sm sm:text-base lg:text-lg break-words">{selectedStockItem.location}</p>
+                       </div>
+                       <div className="space-y-1">
+                         <Label className="text-xs sm:text-sm font-medium text-gray-600">Total Items</Label>
+                         <p className="font-bold text-lg sm:text-xl lg:text-2xl text-green-800">
+                           {isLoadingDetailedStock ? '...' : filteredAndSortedProducts.length}
+                         </p>
+                       </div>
+                       <div className="space-y-1">
+                         <Label className="text-xs sm:text-sm font-medium text-gray-600">Total Quantity</Label>
+                         <p className="font-bold text-lg sm:text-xl lg:text-2xl text-green-800 break-words">
+                           {isLoadingDetailedStock ? '...' : `${filteredAndSortedProducts.reduce((sum, item) => sum + Number(item.sumqtyonhand), 0).toLocaleString('id-ID')} ${selectedStockItem.unit}`}
+                         </p>
+                       </div>
+                     </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-medium text-gray-600">Jumlah</Label>
-                      <p className="font-bold text-2xl text-green-800">
-                        {selectedStockItem.quantity.toLocaleString('id-ID')} {selectedStockItem.unit}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-600">Satuan</Label>
-                      <p className="font-semibold">{selectedStockItem.unit}</p>
-                    </div>
-                  </div>
+                     <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
+                       <div className={`inline-flex px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${
+                         selectedStockItem.product_type === 'RAW MATERIAL'
+                           ? 'bg-green-100 text-green-800'
+                           : 'bg-blue-100 text-blue-800'
+                       }`}>
+                         {selectedStockItem.product_type === 'RAW MATERIAL' ? 'Bahan Baku (BB)' : 'Barang Jadi (FG)'}
+                       </div>
+                     </div>
+                   </div>
 
-                  <div className="pt-4 border-t">
-                    <div className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
-                      selectedStockItem.product_type === 'RAW MATERIAL'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-blue-100 text-blue-800'
-                    }`}>
-                      {selectedStockItem.product_type === 'RAW MATERIAL' ? 'Bahan Baku (BB)' : 'Barang Jadi (FG)'}
-                    </div>
-                  </div>
+                   {/* Search and Filter Controls */}
+                   {!isLoadingDetailedStock && detailedStockItems.length > 0 && (
+                     <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
+                       <div className="flex-1 min-w-0">
+                         <div className="relative">
+                           <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3 sm:w-4 sm:h-4" />
+                           <Input
+                             placeholder="Cari produk atau kode..."
+                             value={productSearchTerm}
+                             onChange={(e) => setProductSearchTerm(e.target.value)}
+                             className="pl-8 sm:pl-10 text-sm"
+                           />
+                         </div>
+                       </div>
+                       <div className="sm:w-40 lg:w-48 flex-shrink-0">
+                         <Select value={productSortBy} onValueChange={setProductSortBy}>
+                           <SelectTrigger className="text-sm">
+                             <SelectValue placeholder="Urutkan" />
+                           </SelectTrigger>
+                           <SelectContent>
+                             <SelectItem value="name">Nama Produk</SelectItem>
+                             <SelectItem value="code">Kode Produk</SelectItem>
+                             <SelectItem value="quantity-high">Jumlah (Tertinggi)</SelectItem>
+                             <SelectItem value="quantity-low">Jumlah (Terendah)</SelectItem>
+                           </SelectContent>
+                         </Select>
+                       </div>
+                     </div>
+                   )}
 
-                  <div className="flex justify-end pt-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsStockDetailDialogOpen(false)}
-                    >
-                      Tutup
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
+                   {/* Detailed Products Section */}
+                   <div className="border rounded-lg">
+                     <div className="p-3 sm:p-4 border-b bg-gray-50">
+                       <h3 className="font-semibold text-sm sm:text-base text-gray-800">Detail Produk</h3>
+                     </div>
+
+                     <div className="max-h-64 sm:max-h-80 lg:max-h-96 overflow-y-auto">
+                       {isLoadingDetailedStock ? (
+                         <div className="p-6 sm:p-8 text-center text-gray-600">
+                           <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-green-600 mx-auto mb-2"></div>
+                           <p className="text-sm sm:text-base">Memuat detail produk...</p>
+                         </div>
+                       ) : filteredAndSortedProducts.length === 0 ? (
+                         <div className="p-6 sm:p-8 text-center text-gray-600">
+                           <p className="text-sm sm:text-base">
+                             {detailedStockItems.length === 0
+                               ? 'Tidak ada produk ditemukan untuk kategori dan lokasi ini'
+                               : 'Tidak ada produk yang sesuai dengan filter pencarian'
+                             }
+                           </p>
+                         </div>
+                       ) : (
+                         <div className="divide-y">
+                           {filteredAndSortedProducts.map((product, index) => (
+                             <div key={index} className="p-3 sm:p-4 hover:bg-gray-50 transition-colors">
+                               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 items-center">
+                                 <div className="sm:col-span-1 lg:col-span-2 min-w-0">
+                                   <Label className="text-xs font-medium text-gray-500 block">Nama Produk</Label>
+                                   <p className="font-medium text-xs sm:text-sm text-gray-900 break-words mt-1">{product.name}</p>
+                                   {/* <p className="text-xs text-gray-500 mt-1 break-all">{product.m_product_id}</p> */}
+                                 </div>
+                                 <div className="text-left sm:text-right lg:text-right">
+                                   <Label className="text-xs font-medium text-gray-500 block">Stok</Label>
+                                   <p className="font-bold text-sm sm:text-base text-green-800 mt-1">
+                                     {Number(product.sumqtyonhand).toLocaleString('id-ID')} {product.uom_name}
+                                   </p>
+                                 </div>
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                       )}
+                     </div>
+                   </div>
+
+                   <div className="flex justify-end pt-3 sm:pt-4">
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={() => {
+                         setIsStockDetailDialogOpen(false);
+                         setDetailedStockItems([]);
+                         setProductSearchTerm('');
+                         setProductSortBy('name');
+                       }}
+                       className="text-sm"
+                     >
+                       Tutup
+                     </Button>
+                   </div>
+                 </div>
+               )}
+             </DialogContent>
+           </Dialog>
         </Tabs>
       </main>
     </div>
