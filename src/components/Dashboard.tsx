@@ -9,7 +9,7 @@ import { Label } from "./ui/label";
 import { Checkbox } from "./ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { UserButton, useUser, useAuth } from "@clerk/clerk-react";
 //import { supabase } from "../lib/supabase";
 import { Package, TrendingUp, TrendingDown, MapPin, Plus, Edit, Trash2, Search, Users } from 'lucide-react';
@@ -90,6 +90,17 @@ interface Location {
   name: string;
   value: string;
   is_active: boolean;
+}
+
+interface SalesSummary {
+  period: string; // YYYY-MM format
+  m_location_id: number;
+  location: string;
+  m_product_category_id: number;
+  product_category_name: string;
+  total_qty_sales: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export default function Dashboard() {
@@ -182,6 +193,15 @@ export default function Dashboard() {
   const [isLoadingDetailedStock, setIsLoadingDetailedStock] = useState(false);
   const [productSearchTerm, setProductSearchTerm] = useState('');
   const [productSortBy, setProductSortBy] = useState('name');
+  
+  // Sales Summary state variables
+  const [salesSummaryData, setSalesSummaryData] = useState<SalesSummary[]>([]);
+  const [salesSummaryDataUnfiltered, setSalesSummaryDataUnfiltered] = useState<SalesSummary[]>([]);
+  const [isLoadingSalesSummary, setIsLoadingSalesSummary] = useState(true);
+  const [salesPeriodFilter, setSalesPeriodFilter] = useState<string[]>([]);
+  const [selectedPeriodRange, setSelectedPeriodRange] = useState<string>('3');
+  const [salesError, setSalesError] = useState<string | null>(null);
+  // Note: locationFilter (shared with Stock BB/FG) is used for sales location filtering
 
   // Create authenticated client
   const supabaseClient = useMemo(() => {
@@ -363,6 +383,84 @@ export default function Dashboard() {
     }
   }, [supabaseClient]);
 
+  // Helper function to get last N months periods in YYYY-MM format
+  const getLastNMonthsPeriods = (n: number): string[] => {
+    const periods: string[] = [];
+    const today = new Date();
+    for (let i = 0; i < n; i++) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      periods.push(period);
+    }
+    return periods;
+  };
+
+  // Helper function to get period range based on selection
+  const getPeriodRange = (range: string): string[] => {
+    const n = parseInt(range);
+    return getLastNMonthsPeriods(n);
+  };
+
+  // Initialize default period filter (last 3 months)
+  useEffect(() => {
+    if (salesPeriodFilter.length === 0) {
+      const defaultPeriods = getLastNMonthsPeriods(3);
+      setSalesPeriodFilter(defaultPeriods);
+    }
+  }, [salesPeriodFilter.length]);
+
+  // Fetch sales summary data from Supabase (unfiltered for filter options)
+  useEffect(() => {
+    if (supabaseClient && salesPeriodFilter.length > 0) {
+      const fetchSalesSummaryData = async () => {
+        setIsLoadingSalesSummary(true);
+        setSalesError(null);
+        try {
+          // Fetch unfiltered data (only period filter) for filter options
+          const unfilteredQuery = supabaseClient
+            .from('sales_summary')
+            .select('*')
+            .in('period', salesPeriodFilter)
+            .order('period', { ascending: false })
+            .order('location')
+            .order('product_category_name');
+
+          const { data: unfilteredData, error: unfilteredError } = await unfilteredQuery;
+
+          if (unfilteredError) {
+            console.error('Error fetching sales summary:', unfilteredError);
+            setSalesError('Gagal memuat data penjualan. Silakan refresh halaman.');
+            return;
+          }
+
+          setSalesSummaryDataUnfiltered(unfilteredData || []);
+
+          // Apply client-side filtering for the table data
+          let filteredData = unfilteredData || [];
+
+          // Apply location filter if selected (using shared locationFilter state from Stock BB/FG)
+          if (!locationFilter.includes('all') && locationFilter.length > 0) {
+            filteredData = filteredData.filter(item => 
+              locationFilter.includes(item.location) // Filter by location name (string)
+            );
+          } else if (locationFilter.length === 0) {
+            // If no locations selected, show no data
+            filteredData = [];
+          }
+
+          setSalesSummaryData(filteredData);
+        } catch (error) {
+          console.error('Error in fetchSalesSummaryData:', error);
+          setSalesError('Terjadi kesalahan saat memuat data penjualan.');
+        } finally {
+          setIsLoadingSalesSummary(false);
+        }
+      };
+
+      fetchSalesSummaryData();
+    }
+  }, [supabaseClient, salesPeriodFilter, locationFilter]);
+
   // Process stock data for BB (Raw Materials) and FG (Finished Goods) separately
   const processedStockDataBB = useMemo(() => {
     if (!stockData.length) return [];
@@ -468,6 +566,105 @@ export default function Dashboard() {
 
   // Keep the original processedStockData for backward compatibility (BB data)
   const processedStockData = processedStockDataBB;
+
+  // Process sales summary data with grouping by location → category → period
+  const processedSalesData = useMemo(() => {
+    if (!salesSummaryData.length) return [];
+
+    // Group by location → category → period
+    const grouped = new Map<string, {
+      location: string;
+      m_location_id: number;
+      category: string;
+      m_product_category_id: number;
+      periods: Record<string, number>;
+      total: number;
+    }>();
+
+    salesSummaryData.forEach(item => {
+      const key = `${item.m_location_id}-${item.m_product_category_id}`;
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          location: item.location,
+          m_location_id: item.m_location_id,
+          category: item.product_category_name,
+          m_product_category_id: item.m_product_category_id,
+          periods: {},
+          total: 0
+        });
+      }
+
+      const group = grouped.get(key)!;
+      group.periods[item.period] = item.total_qty_sales;
+      group.total += item.total_qty_sales;
+    });
+
+    return Array.from(grouped.values()).sort((a, b) => 
+      a.location.localeCompare(b.location) || a.category.localeCompare(b.category)
+    );
+  }, [salesSummaryData]);
+
+  // Get unique locations from sales data (use unfiltered data for filter options)
+  // Returns array of location names (strings) to match locationFilter format
+  const uniqueSalesLocations = useMemo(() => {
+    const locations = new Set<string>();
+    salesSummaryDataUnfiltered.forEach(item => {
+      locations.add(item.location);
+    });
+    return Array.from(locations).sort();
+  }, [salesSummaryDataUnfiltered]);
+
+  // Calculate total sales from sales_summary
+  const totalSalesFromSummary = useMemo(() => 
+    processedSalesData.reduce((sum, item) => sum + item.total, 0),
+    [processedSalesData]
+  );
+
+  // Prepare data for period comparison chart (grouped by location)
+  const salesPeriodComparisonData = useMemo(() => {
+    if (!salesSummaryData.length || salesPeriodFilter.length === 0) return [];
+
+    // Group sales by location and period
+    const locationPeriodData = new Map<string, Map<string, number>>();
+    
+    salesSummaryData.forEach(item => {
+      if (!locationPeriodData.has(item.location)) {
+        locationPeriodData.set(item.location, new Map());
+      }
+      const periodMap = locationPeriodData.get(item.location)!;
+      const currentTotal = periodMap.get(item.period) || 0;
+      periodMap.set(item.period, currentTotal + item.total_qty_sales);
+    });
+
+    // Convert to array format for recharts
+    const chartData: Array<{
+      location: string;
+      period: string;
+      total: number;
+      totalKg: number;
+      locationPeriod: string; // For grouping display
+    }> = [];
+
+    locationPeriodData.forEach((periodMap, location) => {
+      periodMap.forEach((total, period) => {
+        chartData.push({
+          location,
+          period,
+          total: Math.round(total / 1000 * 100) / 100, // Convert to Tons with 2 decimals
+          totalKg: total,
+          locationPeriod: `${location} - ${period}`
+        });
+      });
+    });
+
+    // Sort by location then period
+    return chartData.sort((a, b) => {
+      if (a.location !== b.location) {
+        return a.location.localeCompare(b.location);
+      }
+      return a.period.localeCompare(b.period);
+    });
+  }, [salesSummaryData, salesPeriodFilter]);
 
   // Mock data for sales (varies by time period)
   const getSalesData = (period: string) => {
@@ -1004,8 +1201,13 @@ export default function Dashboard() {
           <Card className="p-4 border-green-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-green-600 mb-1">Penjualan ({timePeriod} bulan)</p>
-                <p className="text-2xl font-bold text-green-800">{totalSales.toLocaleString('id-ID')} Kilogram</p>
+                <p className="text-sm text-green-600 mb-1">Total Penjualan</p>
+                <p className="text-2xl font-bold text-green-800">
+                  {(totalSalesFromSummary / 1000).toLocaleString('id-ID', { maximumFractionDigits: 2 })} Ton
+                </p>
+                <p className="text-xs text-green-500 mt-1">
+                  {selectedPeriodRange} bulan terakhir
+                </p>
               </div>
               <TrendingUp className="w-8 h-8 text-green-600" />
             </div>
@@ -1362,83 +1564,240 @@ export default function Dashboard() {
           <TabsContent value="sales" className="space-y-4">
             <Card className="border-green-200">
               <div className="p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-2 sm:space-y-0">
-                  <h3 className="text-lg font-semibold text-green-800">Analitik Penjualan</h3>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Select value={timePeriod} onValueChange={setTimePeriod}>
-                      <SelectTrigger className="w-full sm:w-32 border-green-200">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1 Bulan</SelectItem>
-                        <SelectItem value="2">2 Bulan</SelectItem>
-                        <SelectItem value="3">3 Bulan</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={viewBy} onValueChange={setViewBy}>
-                      <SelectTrigger className="w-full sm:w-40 border-green-200">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="location">Berdasarkan Lokasi</SelectItem>
-                        <SelectItem value="category">Berdasarkan Kategori</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Sales Chart */}
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={salesData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#dcfce7" />
-                        <XAxis 
-                          dataKey="name" 
-                          tick={{ fontSize: 12 }}
-                          stroke="#166534"
-                        />
-                        <YAxis tick={{ fontSize: 12 }} stroke="#166534" />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: '#f0fdf4', 
-                            border: '1px solid #bbf7d0',
-                            borderRadius: '8px'
-                          }}
-                        />
-                        <Bar dataKey="value" fill="#16a34a" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+                <div className="flex flex-col space-y-4 mb-6">
+                  <h3 className="text-lg font-semibold text-green-800">Data Penjualan</h3>
                   
-                  {/* Sales Pie Chart */}
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={salesData}
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={80}
-                          dataKey="value"
-                          label={({ name, value }) => `${name}: ${Number(value).toLocaleString('id-ID')}t`}
-                        >
-                          {salesData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
+                  {/* Filters */}
+                  <div className="flex flex-col space-y-3 p-4 bg-green-50 rounded-lg border border-green-100">
+                    {/* Period Filter */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Label className="text-sm text-green-700 font-medium min-w-[80px]">Periode:</Label>
+                      <Select 
+                        value={selectedPeriodRange} 
+                        onValueChange={(value) => {
+                          setSalesPeriodFilter(getPeriodRange(value));
+                          setSelectedPeriodRange(value);
+                        }}
+                      >
+                        <SelectTrigger className="w-40 border-green-200">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">Bulan Ini</SelectItem>
+                          <SelectItem value="2">2 Bulan Terakhir</SelectItem>
+                          <SelectItem value="3">3 Bulan Terakhir</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="text-xs text-green-600 ml-2">
+                        {salesPeriodFilter.length > 0 && `(${salesPeriodFilter.join(', ')})`}
+                      </div>
+                    </div>
+
+                    {/* Location Filter - Shared with Stock BB/FG */}
+                    <div className="flex flex-wrap items-start gap-2">
+                      <Label className="text-sm text-green-700 font-medium min-w-[80px] pt-1">Lokasi:</Label>
+                      <div className="flex flex-wrap gap-2">
+                        <div className="flex items-center space-x-1">
+                          <Checkbox
+                            id="all-sales-locations"
+                            checked={locationFilter.includes('all')}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setLocationFilter(['all']);
+                              } else if (locationFilter.length === 1) {
+                                setLocationFilter([]);
+                              }
+                            }}
+                          />
+                          <Label htmlFor="all-sales-locations" className="text-xs text-green-700">Semua</Label>
+                        </div>
+                        {allLocations.filter(location => location.is_active).sort((a, b) => a.name.localeCompare(b.name)).map((location) => (
+                          <div key={location.id} className="flex items-center space-x-1">
+                            <Checkbox
+                              id={`sales-loc-${location.id}`}
+                              checked={locationFilter.includes(location.name)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  if (locationFilter.includes('all')) {
+                                    setLocationFilter([location.name]);
+                                  } else {
+                                    setLocationFilter(prev => [...prev.filter(l => l !== 'all'), location.name]);
+                                  }
+                                } else {
+                                  setLocationFilter(prev => prev.filter(l => l !== location.name));
+                                }
+                              }}
+                            />
+                            <Label htmlFor={`sales-loc-${location.id}`} className="text-xs text-green-700">
+                              {location.name}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
-                
-                {/* Sales Summary */}
-                <div className="mt-6 p-4 bg-green-50 rounded-lg">
-                  <p className="text-green-800">
-                    <strong>Total Penjualan ({timePeriod} bulan):</strong> {totalSales.toLocaleString('id-ID')} Kilogram
-                  </p>
-                </div>
+
+                {/* Content: Loading, Error, or Data */}
+                {isLoadingSalesSummary ? (
+                  <div className="text-center py-12 text-green-600">
+                    <div className="animate-pulse">Memuat data penjualan...</div>
+                  </div>
+                ) : salesError ? (
+                  <div className="text-center py-12 text-red-600">
+                    <p className="font-medium">{salesError}</p>
+                    <Button 
+                      onClick={() => window.location.reload()} 
+                      className="mt-4 bg-green-600 hover:bg-green-700"
+                    >
+                      Refresh Halaman
+                    </Button>
+                  </div>
+                ) : processedSalesData.length === 0 ? (
+                  <div className="text-center py-12 text-green-600">
+                    <p>Tidak ada data penjualan untuk filter yang dipilih</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Sales Period Comparison Chart - Grouped by Location */}
+                    {salesPeriodComparisonData.length > 0 ? (
+                      <div className="mb-6">
+                        <h4 className="text-md font-semibold text-green-800 mb-4">
+                          Komparasi Penjualan per Lokasi & Periode 
+                          <span className="text-xs text-gray-500 ml-2">({salesPeriodComparisonData.length} data)</span>
+                        </h4>
+                        <div className="w-full bg-white p-2 sm:p-4 rounded-lg border border-green-100" style={{ height: '400px', minHeight: '300px' }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={salesPeriodComparisonData}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#dcfce7" />
+                              <XAxis 
+                                dataKey="locationPeriod" 
+                                tick={{ fontSize: 9, angle: -45, textAnchor: 'end' }}
+                                height={80}
+                                stroke="#166534"
+                                interval={0}
+                                scale="band"
+                              />
+                              <YAxis 
+                                tick={{ fontSize: 12 }} 
+                                stroke="#166534"
+                                label={{ 
+                                  value: 'Total Penjualan (Ton)', 
+                                  angle: -90, 
+                                  position: 'insideLeft', 
+                                  style: { fontSize: 12, textAnchor: 'middle' } 
+                                }}
+                              />
+                              <Tooltip 
+                                contentStyle={{ 
+                                  backgroundColor: '#f0fdf4', 
+                                  border: '1px solid #bbf7d0',
+                                  borderRadius: '8px'
+                                }}
+                                formatter={(value: number) => {
+                                  const item = salesPeriodComparisonData.find(d => d.total === value);
+                                  return `${value.toLocaleString('id-ID', { maximumFractionDigits: 2 })} Ton (${item?.totalKg.toLocaleString('id-ID')} kg)`;
+                                }}
+                                labelFormatter={(label: string) => {
+                                  const item = salesPeriodComparisonData.find(d => d.locationPeriod === label);
+                                  return item ? `${item.location} - ${item.period}` : label;
+                                }}
+                              />
+                              <Bar 
+                                dataKey="total" 
+                                fill="#16a34a"
+                                radius={[4, 4, 0, 0]}
+                                name="Total Penjualan"
+                                isAnimationActive={false}
+                                activeBar={false}
+                              >
+                                {salesPeriodComparisonData.map((entry, index) => (
+                                  <Cell 
+                                    key={`cell-${index}`} 
+                                    fill={getCategoryColor(entry.location, index)}
+                                  />
+                                ))}
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                        
+                        {/* Summary and Legend */}
+                        <div className="mt-3 space-y-2">
+                          <div className="p-3 bg-green-50 rounded-lg text-center">
+                            <p className="text-sm text-green-700">
+                              <strong>Total Keseluruhan:</strong> {(totalSalesFromSummary / 1000).toLocaleString('id-ID', { maximumFractionDigits: 2 })} Ton
+                              <span className="text-xs ml-2">({selectedPeriodRange} bulan terakhir)</span>
+                            </p>
+                          </div>
+                          
+                          {/* Location Legend */}
+                          {(() => {
+                            const uniqueLocations = Array.from(new Set(salesPeriodComparisonData.map(d => d.location))).sort();
+                            return uniqueLocations.length > 1 && (
+                              <div className="p-3 bg-gray-50 rounded-lg">
+                                <p className="text-xs font-medium text-gray-700 mb-2">Legenda Lokasi:</p>
+                                <div className="flex flex-wrap gap-3">
+                                  {uniqueLocations.map((location, idx) => (
+                                    <div key={location} className="flex items-center space-x-2">
+                                      <div
+                                        className="w-4 h-4 rounded"
+                                        style={{ backgroundColor: getCategoryColor(location, idx) }}
+                                      ></div>
+                                      <span className="text-xs text-gray-700">{location}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
+                        <p className="text-sm text-yellow-700">
+                          📊 Grafik komparasi akan muncul jika ada data penjualan dari periode yang dipilih
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Sales Data Table */}
+                    <div className="mb-6 overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="font-semibold">Lokasi</TableHead>
+                            <TableHead className="font-semibold">Kategori Produk</TableHead>
+                            {salesPeriodFilter.map(period => (
+                              <TableHead key={period} className="font-semibold text-right">{period}</TableHead>
+                            ))}
+                            <TableHead className="font-semibold text-right">Total</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {processedSalesData.map((item, idx) => (
+                            <TableRow key={idx} className="hover:bg-green-50">
+                              <TableCell className="font-medium">{item.location}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="text-xs border-green-300 text-green-700">
+                                  {item.category}
+                                </Badge>
+                              </TableCell>
+                              {salesPeriodFilter.map(period => (
+                                <TableCell key={period} className="text-right">
+                                  {item.periods[period] ? item.periods[period].toLocaleString('id-ID') : '-'}
+                                </TableCell>
+                              ))}
+                              <TableCell className="text-right font-bold text-green-800">
+                                {item.total.toLocaleString('id-ID')} kg
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </>
+                )}
               </div>
             </Card>
           </TabsContent>
