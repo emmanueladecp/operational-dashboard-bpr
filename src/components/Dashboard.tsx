@@ -1348,61 +1348,59 @@ export default function Dashboard() {
                   </div>
                   
                   {/* Stock Chart */}
+                  {/* <div className="h-80"> */}
                   <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={processedStockData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#dcfce7" />
-                        <XAxis
-                          dataKey="location"
-                          tick={{ fontSize: 12 }}
-                          stroke="#166534"
-                        />
-                        <YAxis tick={{ fontSize: 12 }} stroke="#166534" />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: '#f0fdf4',
-                            border: '1px solid #bbf7d0',
-                            borderRadius: '8px'
-                          }}
-                          labelFormatter={(label) => `Location: ${label}`}
-                          formatter={(value, name, props) => [
-                            `${Number(value).toLocaleString('id-ID')} ${props.payload?.unit || 'Kilogram'}`,
-                            `Category: ${props.payload?.category || 'N/A'}`
-                          ]}
-                        />
-                        <Bar dataKey="quantity" radius={[4, 4, 0, 0]}>
-                          {processedStockData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={getCategoryColor(entry.category, index)} />
-                          ))}
-                        </Bar>
-                      </BarChart>
+                    <ResponsiveContainer width="100%" height="100%">  
+                        <BarChart data={processedStockData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#dcfce7" />
+                          <XAxis
+                            dataKey="location"
+                            tick={{ fontSize: 12 }}
+                            stroke="#166534"
+                          />
+                          <YAxis tick={{ fontSize: 12 }} stroke="#166534" />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: '#f0fdf4',
+                              border: '1px solid #bbf7d0',
+                              borderRadius: '8px'
+                            }}
+                            labelFormatter={(label) => `Location: ${label}`}
+                            formatter={(value, name, props) => [
+                              `${Number(value).toLocaleString('id-ID')} ${props.payload?.unit || 'Kilogram'}`,
+                              `Category: ${props.payload?.category || 'N/A'}`
+                            ]}
+                          />
+                          <Bar dataKey="quantity" radius={[4, 4, 0, 0]}>
+                            {processedStockData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={getCategoryColor(entry.category, index)} />
+                            ))}
+                          </Bar>
+                        </BarChart>
                     </ResponsiveContainer>
+                    <div>
+                      {/* Legend */}
+                      {uniqueCategories.length > 0 && (
+                        <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-100">
+                          <h5 className="text-sm font-medium text-green-800 mb-3">Kategori:</h5>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                            {uniqueCategories.map((category, index) => (
+                              <div key={category} className="flex items-center space-x-2">
+                                <div
+                                  className="w-4 h-4 rounded-sm border border-gray-300"
+                                  style={{ backgroundColor: getCategoryColor(category, index) }}
+                                ></div>
+                                <span className="text-xs text-green-700 truncate" title={category}>
+                                  {category}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>  
                   </div>
                 </div>
-
-                <ResponsiveContainer width="100%" height="100%">
-                  <div>
-                    {/* Legend */}
-                  {uniqueCategories.length > 0 && (
-                    <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-100">
-                      <h5 className="text-sm font-medium text-green-800 mb-3">Kategori:</h5>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-                        {uniqueCategories.map((category, index) => (
-                          <div key={category} className="flex items-center space-x-2">
-                            <div
-                              className="w-4 h-4 rounded-sm border border-gray-300"
-                              style={{ backgroundColor: getCategoryColor(category, index) }}
-                            ></div>
-                            <span className="text-xs text-green-700 truncate" title={category}>
-                              {category}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  </div>  
-                </ResponsiveContainer>
               </div>
             </Card>
           </TabsContent>
@@ -1523,39 +1521,37 @@ export default function Dashboard() {
                         </BarChart>
 
                       </ResponsiveContainer>
-                    </div>
-                    <div className="h-200">
-                      
+                      <ResponsiveContainer width="100%" height="100%">
+                        <div>
+                          {/* Legend */}
+                        {(() => {
+                          const uniqueCategoriesFG = new Set(processedStockDataFG.map(item => item.category));
+                          const uniqueCategoriesArray = Array.from(uniqueCategoriesFG).sort();
+
+                          return uniqueCategoriesArray.length > 0 && (
+                            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                              <h5 className="text-sm font-medium text-blue-800 mb-3">Kategori:</h5>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                                {uniqueCategoriesArray.map((category, index) => (
+                                  <div key={category} className="flex items-center space-x-2">
+                                    <div
+                                      className="w-4 h-4 rounded-sm border border-gray-300"
+                                      style={{ backgroundColor: getCategoryColor(category, index) }}
+                                    ></div>
+                                    <span className="text-xs text-blue-700 truncate" title={category}>
+                                      {category}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                        </div>
+                      </ResponsiveContainer>
                     </div>
                 </div>
-                <ResponsiveContainer width="100%" height="100%">
-                  <div>
-                    {/* Legend */}
-                  {(() => {
-                    const uniqueCategoriesFG = new Set(processedStockDataFG.map(item => item.category));
-                    const uniqueCategoriesArray = Array.from(uniqueCategoriesFG).sort();
-
-                    return uniqueCategoriesArray.length > 0 && (
-                      <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                        <h5 className="text-sm font-medium text-blue-800 mb-3">Kategori:</h5>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-                          {uniqueCategoriesArray.map((category, index) => (
-                            <div key={category} className="flex items-center space-x-2">
-                              <div
-                                className="w-4 h-4 rounded-sm border border-gray-300"
-                                style={{ backgroundColor: getCategoryColor(category, index) }}
-                              ></div>
-                              <span className="text-xs text-blue-700 truncate" title={category}>
-                                {category}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                  </div>
-                </ResponsiveContainer>
+                
               </div>
             </Card>
           </TabsContent>
