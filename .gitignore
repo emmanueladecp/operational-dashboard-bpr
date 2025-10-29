@@ -66,3 +66,15 @@ Thumbs.db
 # Package manager files
 package-lock.json.backup
 yarn.lock.backup
+
+# Documentation with sensitive examples/secrets
+AGENTS.md
+BUGFIX_SALES_FILTER.md
+IMPROVEMENT_SHARED_LOCATION_FILTER.md
+SALES_FEATURE_DEPLOYMENT.md
+
+# SQL files with potential sensitive data
+supabase_sales_summary_rls.sql
+supabase_rls_policies.sql
+supabase_rls_policies_fixed.sql
+supabase_stock_table_migration.sql
