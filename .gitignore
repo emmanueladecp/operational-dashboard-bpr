@@ -31,6 +31,9 @@ coverage/
 *.sw?
 .DS_Store
 
+# Droid configuration (contains sensitive tokens)
+.droid/
+
 # Logs
 logs/
 *.log
