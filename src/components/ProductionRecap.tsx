@@ -79,6 +79,11 @@ export default function ProductionRecap({
   const filteredProductionData = useMemo(() => {
     let filtered = [...productionData];
 
+    // Filter only END PRODUCT and TURUNAN (exclude BAHAN BAKU + WIP)
+    filtered = filtered.filter(item => 
+      item.jenisproduk === 'END PRODUCT' || item.jenisproduk === 'TURUNAN'
+    );
+
     // Apply location filter
     if (!locationFilter.includes('all') && locationFilter.length > 0) {
       const selectedLocationNames = locationFilter
@@ -240,10 +245,13 @@ export default function ProductionRecap({
         <div>
           <h3 className="text-xl sm:text-2xl font-bold text-green-800 flex items-center gap-2">
             <Package className="w-6 h-6" />
-            Rekap Hasil Produksi
+            Rekap Hasil Produksi Akhir
           </h3>
           <p className="text-sm text-gray-600 mt-1">
             {viewMode === 'mtd' ? 'Month-to-Date (MTD)' : `${selectedPeriod} Bulan Terakhir`}
+          </p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            (Hanya END PRODUCT & TURUNAN)
           </p>
         </div>
 
@@ -311,10 +319,11 @@ export default function ProductionRecap({
         <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-green-700 font-medium">Total Produksi</p>
+              <p className="text-sm text-green-700 font-medium">Total Produksi Akhir</p>
               <p className="text-2xl sm:text-3xl font-bold text-green-900 mt-1">
                 {formatNumber(statistics.totalQty)}
               </p>
+              <p className="text-xs text-green-600 mt-1">END PRODUCT + TURUNAN</p>
             </div>
             <Package className="w-10 h-10 sm:w-12 sm:h-12 text-green-600 opacity-80" />
           </div>

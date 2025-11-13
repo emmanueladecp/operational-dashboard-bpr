@@ -52,6 +52,43 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-13 - Production Recap Filter Update
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Enhancement  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Added jenisproduk filtering logic
+
+**Description:**
+Updated production recap feature to filter and display only final production products, excluding raw materials and WIP.
+
+**Changes Made:**
+1. **Filtering Logic:**
+   - Only displays jenisproduk: 'END PRODUCT' and 'TURUNAN'
+   - Excludes 'BAHAN BAKU + WIP' from production recap
+   - Filter applied at data processing level (useMemo)
+
+2. **UI Updates:**
+   - Changed title from "Rekap Hasil Produksi" to "Rekap Hasil Produksi Akhir"
+   - Added subtitle: "(Hanya END PRODUCT & TURUNAN)"
+   - Updated statistics card label: "Total Produksi Akhir"
+   - Added indicator: "END PRODUCT + TURUNAN"
+
+3. **Business Logic:**
+   - 'BAHAN BAKU + WIP' now treated as initial raw materials
+   - Final production (END PRODUCT + TURUNAN) counted as end products
+   - All statistics (total, positive, negative qty) reflect only final products
+
+**Impact:**
+- More accurate representation of final production output
+- Clear distinction between raw materials and finished goods
+- Improved data interpretation for production metrics
+
+**Testing:** Build successful, pending manual verification
+
+**Related Files:** ProductionRecap.tsx
+
+---
+
 ### 2025-11-13 - Production Recap Feature Implementation
 **Changed By:** Droid (Factory AI)  
 **Type:** Feature Development  
