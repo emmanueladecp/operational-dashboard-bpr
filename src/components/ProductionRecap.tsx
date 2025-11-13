@@ -2,8 +2,6 @@ import { useState, useMemo, useEffect } from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Badge } from "./ui/badge";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { Calendar, TrendingUp, TrendingDown, Package } from 'lucide-react';
 import { SupabaseClient } from "@supabase/supabase-js";
 
@@ -35,7 +33,6 @@ export default function ProductionRecap({
   const [isLoadingProduction, setIsLoadingProduction] = useState(true);
   const [viewMode, setViewMode] = useState<'mtd' | 'periodic'>('mtd');
   const [selectedPeriod, setSelectedPeriod] = useState<string>('3'); // Default 3 months
-  const [groupBy, setGroupBy] = useState<'location' | 'product'>('location');
   const [error, setError] = useState<string | null>(null);
 
   // Fetch production recap data
@@ -124,75 +121,7 @@ export default function ProductionRecap({
     );
   }, [allFilteredData]);
 
-  // Process data for charts - Group by location
-  const chartDataByLocation = useMemo(() => {
-    if (filteredProductionData.length === 0) return [];
 
-    const grouped = filteredProductionData.reduce((acc, item) => {
-      const key = `${item.location}_${item.period_date}`;
-      
-      if (!acc[key]) {
-        acc[key] = {
-          location: item.location,
-          period: new Date(item.period_date).toLocaleDateString('id-ID', { 
-            year: 'numeric', 
-            month: 'short' 
-          }),
-          periodDate: item.period_date,
-          totalQty: 0,
-          products: {}
-        };
-      }
-      
-      acc[key].totalQty += item.qty;
-      
-      if (!acc[key].products[item.jenisproduk]) {
-        acc[key].products[item.jenisproduk] = 0;
-      }
-      acc[key].products[item.jenisproduk] += item.qty;
-      
-      return acc;
-    }, {} as Record<string, any>);
-
-    return Object.values(grouped).sort((a: any, b: any) => 
-      new Date(b.periodDate).getTime() - new Date(a.periodDate).getTime()
-    );
-  }, [filteredProductionData]);
-
-  // Process data for charts - Group by product
-  const chartDataByProduct = useMemo(() => {
-    if (filteredProductionData.length === 0) return [];
-
-    const grouped = filteredProductionData.reduce((acc, item) => {
-      const key = `${item.jenisproduk}_${item.period_date}`;
-      
-      if (!acc[key]) {
-        acc[key] = {
-          product: item.jenisproduk,
-          period: new Date(item.period_date).toLocaleDateString('id-ID', { 
-            year: 'numeric', 
-            month: 'short' 
-          }),
-          periodDate: item.period_date,
-          totalQty: 0,
-          locations: {}
-        };
-      }
-      
-      acc[key].totalQty += item.qty;
-      
-      if (!acc[key].locations[item.location]) {
-        acc[key].locations[item.location] = 0;
-      }
-      acc[key].locations[item.location] += item.qty;
-      
-      return acc;
-    }, {} as Record<string, any>);
-
-    return Object.values(grouped).sort((a: any, b: any) => 
-      new Date(b.periodDate).getTime() - new Date(a.periodDate).getTime()
-    );
-  }, [filteredProductionData]);
 
   // Calculate statistics
   const statistics = useMemo(() => {
@@ -311,21 +240,6 @@ export default function ProductionRecap({
                 </SelectContent>
               </Select>
             </div>
-            
-            <div className="flex-1">
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
-                Tampilkan Berdasarkan
-              </label>
-              <Select value={groupBy} onValueChange={(value) => setGroupBy(value as 'location' | 'product')}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="location">Lokasi</SelectItem>
-                  <SelectItem value="product">Jenis Produk</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
         </Card>
       )}
@@ -427,158 +341,7 @@ export default function ProductionRecap({
         </Card>
       )}
 
-      {/* Charts */}
-      {!isLoadingProduction && !error && filteredProductionData.length > 0 && (
-        <>
-          {/* Bar Chart */}
-          <Card className="p-4 sm:p-6">
-            <h4 className="text-lg font-semibold text-green-800 mb-4">
-              Grafik Produksi {groupBy === 'location' ? 'per Lokasi' : 'per Jenis Produk'}
-            </h4>
-            
-            <div className="w-full" style={{ height: '400px' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={groupBy === 'location' ? chartDataByLocation : chartDataByProduct}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#dcfce7" />
-                  <XAxis 
-                    dataKey={groupBy === 'location' ? 'location' : 'product'}
-                    tick={{ fontSize: 11 }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={100}
-                    stroke="#166534"
-                  />
-                  <YAxis 
-                    tick={{ fontSize: 12 }} 
-                    stroke="#166534"
-                    label={{ 
-                      value: 'Kuantitas', 
-                      angle: -90, 
-                      position: 'insideLeft',
-                      style: { fontSize: 12 }
-                    }}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#f0fdf4', 
-                      border: '1px solid #bbf7d0',
-                      borderRadius: '8px',
-                      fontSize: '12px'
-                    }}
-                    formatter={(value: any) => formatNumber(Number(value))}
-                  />
-                  <Legend 
-                    wrapperStyle={{ fontSize: '12px' }}
-                    iconType="square"
-                  />
-                  <Bar 
-                    dataKey="totalQty" 
-                    name="Total Produksi"
-                    radius={[4, 4, 0, 0]}
-                  >
-                    {(groupBy === 'location' ? chartDataByLocation : chartDataByProduct).map((entry: any, index: number) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={groupBy === 'location' 
-                          ? getLocationColor(entry.location, index) 
-                          : getProductColor(entry.product, index)
-                        } 
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
 
-            {/* Legend for products/locations */}
-            <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-100">
-              <h5 className="text-sm font-medium text-green-800 mb-3">
-                {groupBy === 'location' ? 'Lokasi:' : 'Jenis Produk:'}
-              </h5>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-                {groupBy === 'location' 
-                  ? chartDataByLocation.map((item: any, index: number) => (
-                      <div key={item.location} className="flex items-center space-x-2">
-                        <div
-                          className="w-4 h-4 rounded"
-                          style={{ backgroundColor: getLocationColor(item.location, index) }}
-                        />
-                        <span className="text-xs text-gray-700 truncate">{item.location}</span>
-                      </div>
-                    ))
-                  : uniqueProducts.map((product: string, index: number) => (
-                      <div key={product} className="flex items-center space-x-2">
-                        <div
-                          className="w-4 h-4 rounded"
-                          style={{ backgroundColor: getProductColor(product, index) }}
-                        />
-                        <span className="text-xs text-gray-700 truncate">{product}</span>
-                      </div>
-                    ))
-                }
-              </div>
-            </div>
-          </Card>
-
-          {/* Detailed Table */}
-          <Card className="p-4 sm:p-6">
-            <h4 className="text-lg font-semibold text-green-800 mb-4">
-              Detail Data Produksi
-            </h4>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-green-200 bg-green-50">
-                    <th className="text-left p-3 font-semibold text-green-800">Lokasi</th>
-                    <th className="text-left p-3 font-semibold text-green-800">Jenis Produk</th>
-                    <th className="text-left p-3 font-semibold text-green-800">Tanggal</th>
-                    <th className="text-right p-3 font-semibold text-green-800">Kuantitas</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredProductionData
-                    .sort((a, b) => new Date(b.period_date).getTime() - new Date(a.period_date).getTime())
-                    .slice(0, 50) // Limit to 50 rows for performance
-                    .map((item, index) => (
-                      <tr 
-                        key={item.id} 
-                        className={`border-b border-gray-100 hover:bg-green-50 transition-colors ${
-                          index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                        }`}
-                      >
-                        <td className="p-3 text-gray-700">{item.location}</td>
-                        <td className="p-3">
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                            {item.jenisproduk}
-                          </Badge>
-                        </td>
-                        <td className="p-3 text-gray-600">
-                          {new Date(item.period_date).toLocaleDateString('id-ID', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                        </td>
-                        <td className={`p-3 text-right font-medium ${
-                          item.qty >= 0 ? 'text-green-700' : 'text-orange-700'
-                        }`}>
-                          {item.qty >= 0 ? '+' : ''}{formatNumber(item.qty)}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-
-            {filteredProductionData.length > 50 && (
-              <div className="mt-4 text-center text-sm text-gray-500">
-                Menampilkan 50 dari {filteredProductionData.length} data
-              </div>
-            )}
-          </Card>
-        </>
-      )}
     </div>
   );
 }

@@ -52,6 +52,54 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-13 - Simplify Production Recap UI
+**Changed By:** Droid (Factory AI)  
+**Type:** UI Simplification  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Removed charts, tables, and legends
+
+**Description:**
+Simplified Production Recap component to show only key statistics cards, removing detailed visualizations and data tables.
+
+**Changes Made:**
+
+**Removed Components:**
+1. ❌ Bar Chart (Grafik Produksi per Lokasi/Produk)
+2. ❌ Detailed Production Data Table (Detail Data Produksi)
+3. ❌ Location/Product Legend
+4. ❌ "Tampilkan Berdasarkan" filter (location/product grouping)
+
+**Kept Components:**
+1. ✅ Header with MTD/Periodic toggle
+2. ✅ Period filter (1/3/6/12 months) for periodic view
+3. ✅ 4 Statistics Cards:
+   - Total Produksi (END PRODUCT)
+   - TURUNAN (Produk Turunan)
+   - Pemakaian Bahan Baku (BAHAN BAKU + WIP)
+   - Jenis Produk Akhir (count)
+4. ✅ Loading, error, and empty states
+
+**Code Cleanup:**
+- Removed unused imports: Badge, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
+- Removed unused state: `groupBy`
+- Removed unused functions: `chartDataByLocation`, `chartDataByProduct`, `uniqueProducts`, `getProductColor`, `getLocationColor`
+- Reduced component complexity and bundle size
+
+**UI Impact:**
+- Cleaner, more focused interface
+- Faster page load (smaller bundle)
+- Mobile-friendly without horizontal scrolling
+- Emphasis on key metrics only
+
+**Bundle Size Improvement:**
+- Dashboard.js: 70.72 kB → 65.39 kB (7.5% reduction)
+
+**Testing:** Build successful, pending manual verification
+
+**Related Files:** ProductionRecap.tsx
+
+---
+
 ### 2025-11-13 - Production Recap Statistics Update
 **Changed By:** Droid (Factory AI)  
 **Type:** Feature Enhancement  
