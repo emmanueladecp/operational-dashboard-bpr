@@ -52,6 +52,67 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-13 - Production Recap Statistics Update
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Enhancement  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Updated statistics cards calculation
+
+**Description:**
+Revamped statistics cards to show specific product type metrics instead of generic positive/negative calculations.
+
+**Statistics Cards Changes:**
+
+**Before:**
+1. Total Produksi Akhir (END PRODUCT + TURUNAN)
+2. Produksi (+) - Positive qty from all products
+3. Penyesuaian (-) - Negative qty from all products
+4. Jenis Produk - Count of unique products
+
+**After:**
+1. **Total Produksi** - Only END PRODUCT qty
+2. **TURUNAN** - Only TURUNAN product qty (Produk Turunan)
+3. **Pemakaian Bahan Baku** - Only BAHAN BAKU + WIP qty
+4. **Jenis Produk Akhir** - Count of END PRODUCT + TURUNAN types
+
+**Implementation Details:**
+
+1. **Data Filtering:**
+   - Created `allFilteredData` - includes all jenisproduk (END PRODUCT, TURUNAN, BAHAN BAKU + WIP)
+   - Used for statistics calculation only
+   - `filteredProductionData` - only END PRODUCT + TURUNAN (for charts and table display)
+
+2. **Statistics Calculation:**
+   ```typescript
+   endProductQty: Sum of all 'END PRODUCT' qty
+   turunanQty: Sum of all 'TURUNAN' qty
+   bahanBakuQty: Math.abs(Sum of all 'BAHAN BAKU + WIP' qty)
+   uniqueProducts: Count of unique END PRODUCT + TURUNAN types
+   ```
+
+3. **Card Labels:**
+   - Card 1 (Green): "Total Produksi" with subtitle "END PRODUCT"
+   - Card 2 (Blue): "TURUNAN" with subtitle "Produk Turunan"
+   - Card 3 (Orange): "Pemakaian Bahan Baku" with subtitle "BAHAN BAKU + WIP"
+   - Card 4 (Purple): "Jenis Produk Akhir" with subtitle "END PRODUCT + TURUNAN"
+
+4. **Business Logic:**
+   - **END PRODUCT**: Final production output
+   - **TURUNAN**: Derivative products from main production
+   - **BAHAN BAKU + WIP**: Raw materials consumption and work-in-progress
+
+**Impact:**
+- Clearer separation of product types in metrics
+- More accurate representation of production flow
+- Easy to track raw material consumption vs final output
+- Better insight into derivative products performance
+
+**Testing:** Build successful, pending manual verification
+
+**Related Files:** ProductionRecap.tsx
+
+---
+
 ### 2025-11-13 - Production Recap Filter Update
 **Changed By:** Droid (Factory AI)  
 **Type:** Feature Enhancement  

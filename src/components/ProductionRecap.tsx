@@ -75,14 +75,9 @@ export default function ProductionRecap({
     fetchProductionData();
   }, [supabaseClient]);
 
-  // Filter data based on location filter and view mode
-  const filteredProductionData = useMemo(() => {
+  // Filter data for ALL statistics (including BAHAN BAKU + WIP for statistics only)
+  const allFilteredData = useMemo(() => {
     let filtered = [...productionData];
-
-    // Filter only END PRODUCT and TURUNAN (exclude BAHAN BAKU + WIP)
-    filtered = filtered.filter(item => 
-      item.jenisproduk === 'END PRODUCT' || item.jenisproduk === 'TURUNAN'
-    );
 
     // Apply location filter
     if (!locationFilter.includes('all') && locationFilter.length > 0) {
@@ -121,6 +116,13 @@ export default function ProductionRecap({
 
     return filtered;
   }, [productionData, locationFilter, allLocations, viewMode, selectedPeriod]);
+
+  // Filter data for display (charts and table) - only END PRODUCT and TURUNAN
+  const filteredProductionData = useMemo(() => {
+    return allFilteredData.filter(item => 
+      item.jenisproduk === 'END PRODUCT' || item.jenisproduk === 'TURUNAN'
+    );
+  }, [allFilteredData]);
 
   // Process data for charts - Group by location
   const chartDataByLocation = useMemo(() => {
@@ -194,21 +196,32 @@ export default function ProductionRecap({
 
   // Calculate statistics
   const statistics = useMemo(() => {
-    const totalQty = filteredProductionData.reduce((sum, item) => sum + item.qty, 0);
+    // Total Produksi: Only END PRODUCT
+    const endProductQty = allFilteredData
+      .filter(item => item.jenisproduk === 'END PRODUCT')
+      .reduce((sum, item) => sum + item.qty, 0);
+    
+    // TURUNAN: All TURUNAN products
+    const turunanQty = allFilteredData
+      .filter(item => item.jenisproduk === 'TURUNAN')
+      .reduce((sum, item) => sum + item.qty, 0);
+    
+    // Pemakaian Bahan Baku: All BAHAN BAKU + WIP
+    const bahanBakuQty = allFilteredData
+      .filter(item => item.jenisproduk === 'BAHAN BAKU + WIP')
+      .reduce((sum, item) => sum + item.qty, 0);
+
     const uniqueProducts = new Set(filteredProductionData.map(item => item.jenisproduk)).size;
     const uniqueLocations = new Set(filteredProductionData.map(item => item.location)).size;
-    const positiveQty = filteredProductionData.filter(item => item.qty > 0).reduce((sum, item) => sum + item.qty, 0);
-    const negativeQty = filteredProductionData.filter(item => item.qty < 0).reduce((sum, item) => sum + Math.abs(item.qty), 0);
 
     return {
-      totalQty,
+      endProductQty,
+      turunanQty,
+      bahanBakuQty: Math.abs(bahanBakuQty), // Display as positive number
       uniqueProducts,
-      uniqueLocations,
-      positiveQty,
-      negativeQty,
-      netQty: positiveQty - negativeQty
+      uniqueLocations
     };
-  }, [filteredProductionData]);
+  }, [allFilteredData, filteredProductionData]);
 
   // Get unique products for legend
   const uniqueProducts = useMemo(() => {
@@ -319,11 +332,11 @@ export default function ProductionRecap({
         <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-green-700 font-medium">Total Produksi Akhir</p>
+              <p className="text-sm text-green-700 font-medium">Total Produksi</p>
               <p className="text-2xl sm:text-3xl font-bold text-green-900 mt-1">
-                {formatNumber(statistics.totalQty)}
+                {formatNumber(statistics.endProductQty)}
               </p>
-              <p className="text-xs text-green-600 mt-1">END PRODUCT + TURUNAN</p>
+              <p className="text-xs text-green-600 mt-1">END PRODUCT</p>
             </div>
             <Package className="w-10 h-10 sm:w-12 sm:h-12 text-green-600 opacity-80" />
           </div>
@@ -332,10 +345,11 @@ export default function ProductionRecap({
         <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-blue-700 font-medium">Produksi (+)</p>
+              <p className="text-sm text-blue-700 font-medium">TURUNAN</p>
               <p className="text-2xl sm:text-3xl font-bold text-blue-900 mt-1">
-                {formatNumber(statistics.positiveQty)}
+                {formatNumber(statistics.turunanQty)}
               </p>
+              <p className="text-xs text-blue-600 mt-1">Produk Turunan</p>
             </div>
             <TrendingUp className="w-10 h-10 sm:w-12 sm:h-12 text-blue-600 opacity-80" />
           </div>
@@ -344,10 +358,11 @@ export default function ProductionRecap({
         <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-orange-700 font-medium">Penyesuaian (-)</p>
+              <p className="text-sm text-orange-700 font-medium">Pemakaian Bahan Baku</p>
               <p className="text-2xl sm:text-3xl font-bold text-orange-900 mt-1">
-                {formatNumber(statistics.negativeQty)}
+                {formatNumber(statistics.bahanBakuQty)}
               </p>
+              <p className="text-xs text-orange-600 mt-1">BAHAN BAKU + WIP</p>
             </div>
             <TrendingDown className="w-10 h-10 sm:w-12 sm:h-12 text-orange-600 opacity-80" />
           </div>
@@ -356,10 +371,11 @@ export default function ProductionRecap({
         <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-purple-700 font-medium">Jenis Produk</p>
+              <p className="text-sm text-purple-700 font-medium">Jenis Produk Akhir</p>
               <p className="text-2xl sm:text-3xl font-bold text-purple-900 mt-1">
                 {statistics.uniqueProducts}
               </p>
+              <p className="text-xs text-purple-600 mt-1">END PRODUCT + TURUNAN</p>
             </div>
             <Package className="w-10 h-10 sm:w-12 sm:h-12 text-purple-600 opacity-80" />
           </div>
