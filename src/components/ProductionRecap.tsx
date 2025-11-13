@@ -125,25 +125,25 @@ export default function ProductionRecap({
 
   // Calculate statistics
   const statistics = useMemo(() => {
-    // Total Produksi: Only END PRODUCT
+    // Total Produksi: Only END PRODUCT (in TON, rounded down)
     const endProductQty = allFilteredData
       .filter(item => item?.jenisproduk === 'END PRODUCT')
       .reduce((sum, item) => sum + (item?.qty || 0), 0);
     
-    // TURUNAN: All TURUNAN products
+    // TURUNAN: All TURUNAN products (in TON, rounded down)
     const turunanQty = allFilteredData
       .filter(item => item?.jenisproduk === 'TURUNAN')
       .reduce((sum, item) => sum + (item?.qty || 0), 0);
     
-    // Pemakaian Bahan Baku: All BAHAN BAKU + WIP
+    // Pemakaian Bahan Baku: All BAHAN BAKU + WIP (in TON, rounded down)
     const bahanBakuQty = allFilteredData
       .filter(item => item?.jenisproduk === 'BAHAN BAKU + WIP')
       .reduce((sum, item) => sum + (item?.qty || 0), 0);
 
     return {
-      endProductQty: endProductQty || 0,
-      turunanQty: turunanQty || 0,
-      bahanBakuQty: Math.abs(bahanBakuQty || 0) // Display as positive number
+      endProductQty: Math.floor((endProductQty || 0) / 1000), // Convert to TON and round down
+      turunanQty: Math.floor((turunanQty || 0) / 1000), // Convert to TON and round down
+      bahanBakuQty: Math.floor(Math.abs(bahanBakuQty || 0) / 1000) // Convert to TON and round down
     };
   }, [allFilteredData]);
 
@@ -246,7 +246,7 @@ export default function ProductionRecap({
             <div>
               <p className="text-sm text-green-700 font-medium">Total Produksi</p>
               <p className="text-2xl sm:text-3xl font-bold text-green-900 mt-1">
-                {formatNumber(statistics.endProductQty)}
+                {formatNumber(statistics.endProductQty)} <span className="text-lg sm:text-xl">TON</span>
               </p>
               <p className="text-xs text-green-600 mt-1">END PRODUCT</p>
             </div>
@@ -259,7 +259,7 @@ export default function ProductionRecap({
             <div>
               <p className="text-sm text-blue-700 font-medium">TURUNAN</p>
               <p className="text-2xl sm:text-3xl font-bold text-blue-900 mt-1">
-                {formatNumber(statistics.turunanQty)}
+                {formatNumber(statistics.turunanQty)} <span className="text-lg sm:text-xl">TON</span>
               </p>
               <p className="text-xs text-blue-600 mt-1">Produk Turunan</p>
             </div>
@@ -272,7 +272,7 @@ export default function ProductionRecap({
             <div>
               <p className="text-sm text-orange-700 font-medium">Pemakaian Bahan Baku</p>
               <p className="text-2xl sm:text-3xl font-bold text-orange-900 mt-1">
-                {formatNumber(statistics.bahanBakuQty)}
+                {formatNumber(statistics.bahanBakuQty)} <span className="text-lg sm:text-xl">TON</span>
               </p>
               <p className="text-xs text-orange-600 mt-1">BAHAN BAKU + WIP</p>
             </div>
