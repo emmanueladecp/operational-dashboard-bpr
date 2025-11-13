@@ -52,6 +52,59 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-13 - Production Recap Table Creation
+**Changed By:** Droid (Factory AI)  
+**Type:** Database Migration  
+**Files Modified:**
+- ✅ Created `supabase_production_recap_table.sql` - New table migration file
+
+**Description:**
+Created new `production_recap` table to store production recap/summary data per date period per location.
+
+**Table Schema:**
+- **id:** Auto-incrementing primary key
+- **m_location_id:** Foreign key to master_locations (INTEGER, NOT NULL)
+- **location:** Location name (TEXT, denormalized for performance)
+- **period_date:** Date period for recap (DATE, NOT NULL)
+- **jenisproduk:** Product type/category (TEXT, NOT NULL)
+- **qty:** Production quantity (DECIMAL, can be negative for adjustments/returns)
+- **created_at/updated_at:** Timestamps with automatic updates
+
+**Indexes Created:**
+- Single column: m_location_id, location, period_date, jenisproduk
+- Composite: (m_location_id, period_date), (jenisproduk, period_date) for optimal query performance
+
+**RLS Policies:**
+- SUPERADMIN_ROLE: Full access (SELECT, INSERT, UPDATE, DELETE)
+- BOD_ROLE: View all production recap data
+- AUDITOR_ROLE: View all production recap data
+- SALES_MANAGER_ROLE: View only assigned locations (filtered by location name, TEXT comparison)
+- SALES_SUPERVISOR_ROLE: View only assigned locations (filtered by location name, TEXT comparison)
+- Fixed: Changed from m_location_id (INTEGER) to location (TEXT) comparison to match users.locations array type
+
+**Additional Features:**
+- View `production_recap_with_location`: Joins with master_locations for easier querying
+- View `production_recap_monthly`: Monthly aggregation with SUM/AVG/MIN/MAX
+- Automatic updated_at trigger
+- Service role permissions for backend operations
+
+**Implementation Notes:**
+- Follows same RLS pattern as stock, sales_summary, and production_data tables
+- Uses existing `get_current_user_role()` helper function
+- qty column allows negative values for adjustments/returns
+- No existing tables were dropped or altered
+
+**Deployment Steps:**
+1. Go to Supabase Dashboard → SQL Editor
+2. Open and execute `supabase_production_recap_table.sql`
+3. Verify table creation and RLS policies
+
+**Testing:** Pending manual verification in Supabase dashboard
+
+**Related Files:** supabase_rls_policies.sql, supabase_production_data_table.sql, supabase_stock_table_migration.sql
+
+---
+
 ### 2025-11-12 - Base Code Analysis and Documentation
 **Changed By:** Droid (Factory AI)  
 **Type:** Documentation  
