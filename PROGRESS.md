@@ -2,7 +2,7 @@
 
 **Project Progress Tracker**  
 PT. Belitang Panen Raya - Operational Dashboard v1.0  
-Last Updated: 2025-11-12
+Last Updated: 2025-11-13
 
 ---
 
@@ -51,6 +51,103 @@ None currently tracked
 ---
 
 ## Recent Changes
+
+### 2025-11-13 - Change Periodic Filter to Show Individual Months
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Update  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Changed periodic filter from accumulated months to individual month selection
+
+**Description:**
+Updated Production Recap periodic view to show individual months (current or previous) instead of accumulated data over multiple months.
+
+**Changes Made:**
+
+**Filter Logic Changes:**
+1. **Removed:** Period selector with options "1 Bulan", "3 Bulan", "6 Bulan", "12 Bulan" (accumulated)
+2. **Added:** Month selector with options:
+   - "Bulan Ini" (Current Month) - Shows only current month data
+   - "Bulan Sebelumnya" (Previous Month) - Shows only previous month data
+3. **Data Filtering:** Changed from accumulated range to specific month only
+
+**Implementation Details:**
+```typescript
+// Old: Accumulated last N months
+const cutoffDate = new Date();
+cutoffDate.setMonth(cutoffDate.getMonth() - monthsToShow);
+filtered = data.filter(item => itemDate >= cutoffDate);
+
+// New: Specific month only
+if (selectedMonth === 'previous') {
+  // Calculate previous month year/month
+  targetYear = prevDate.getFullYear();
+  targetMonth = prevDate.getMonth() + 1;
+}
+filtered = data.filter(item => 
+  itemDate.getFullYear() === targetYear && 
+  itemDate.getMonth() + 1 === targetMonth
+);
+```
+
+**UI Changes:**
+- Label changed from "Periode" to "Pilih Bulan"
+- Subtitle shows "Bulan Ini" or "Bulan Sebelumnya" instead of "N Bulan Terakhir"
+- Dropdown options simplified to 2 choices (current/previous month)
+
+**Business Logic:**
+- Each month's data is shown independently
+- No accumulation across months
+- Previous month calculation handles year boundary (e.g., January → previous December of prior year)
+
+**Impact:**
+- **Data Display:** Statistics now reflect single month only, not accumulated
+- **User Experience:** Clearer month-to-month comparison without accumulation
+- **Performance:** Simpler filtering logic with exact month matching
+
+**Testing:** Build successful, no TypeScript errors
+
+**Commit Message:** "feat: change periodic filter to show individual months instead of accumulated data"
+
+---
+
+### 2025-11-13 - Update Production Recap Product Type Codes
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Update  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Updated jenisproduk filtering to use abbreviated codes
+
+**Description:**
+Updated Production Recap component to use abbreviated product type codes (FG, TR, BB) instead of full descriptive names.
+
+**Changes Made:**
+
+**Product Type Code Changes:**
+1. **Total Produksi:** Changed filter from `'END PRODUCT'` → `'FG'` (Finished Goods)
+2. **TURUNAN:** Changed filter from `'TURUNAN'` → `'TR'` (Produk Turunan/Derivatives)
+3. **Pemakaian Bahan Baku:** Changed filter from `'BAHAN BAKU + WIP'` → `'BB'` (Bahan Baku/Raw Materials)
+
+**UI Label Updates:**
+- Statistics cards now show abbreviated codes with full names in parentheses:
+  - "FG (Finished Goods)"
+  - "TR (Produk Turunan)"
+  - "BB (Bahan Baku)"
+- Removed header subtitle "(Hanya FG & TR)" for cleaner UI
+
+**Business Logic:**
+- All calculations remain the same (accumulate qty, divide by 1000, floor rounding to TON)
+- Only the filtering criteria changed to match new product type codes in database
+- Maintains existing RLS policies and location filtering
+
+**Impact:**
+- **Database:** Requires production_recap table data to use abbreviated codes (FG, TR, BB)
+- **Frontend:** Updated to match new database schema conventions
+- **Display:** More concise product type indicators on dashboard
+
+**Testing:** Build successful, no TypeScript errors
+
+**Commit Message:** "refactor: update production recap to use abbreviated product type codes (FG/TR/BB)"
+
+---
 
 ### 2025-11-13 - Simplify Production Recap UI
 **Changed By:** Droid (Factory AI)  

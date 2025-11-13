@@ -32,7 +32,7 @@ export default function ProductionRecap({
   const [productionData, setProductionData] = useState<ProductionRecapData[]>([]);
   const [isLoadingProduction, setIsLoadingProduction] = useState(true);
   const [viewMode, setViewMode] = useState<'mtd' | 'periodic'>('mtd');
-  const [selectedPeriod, setSelectedPeriod] = useState<string>('3'); // Default 3 months
+  const [selectedMonth, setSelectedMonth] = useState<'current' | 'previous'>('current'); // Bulan Ini or Bulan Sebelumnya
   const [error, setError] = useState<string | null>(null);
 
   // Fetch production recap data
@@ -100,24 +100,32 @@ export default function ProductionRecap({
                itemDate.getMonth() + 1 === currentMonth;
       });
     } else {
-      // Periodic: Show last N months
-      const monthsToShow = parseInt(selectedPeriod);
-      const cutoffDate = new Date();
-      cutoffDate.setMonth(cutoffDate.getMonth() - monthsToShow);
+      // Periodic: Show selected month only (not accumulated)
+      let targetYear = currentYear;
+      let targetMonth = currentMonth;
+
+      if (selectedMonth === 'previous') {
+        // Calculate previous month
+        const prevDate = new Date(currentYear, currentMonth - 1, 1);
+        prevDate.setMonth(prevDate.getMonth() - 1);
+        targetYear = prevDate.getFullYear();
+        targetMonth = prevDate.getMonth() + 1;
+      }
 
       filtered = filtered.filter(item => {
         const itemDate = new Date(item.period_date);
-        return itemDate >= cutoffDate;
+        return itemDate.getFullYear() === targetYear && 
+               itemDate.getMonth() + 1 === targetMonth;
       });
     }
 
     return filtered;
-  }, [productionData, locationFilter, allLocations, viewMode, selectedPeriod]);
+  }, [productionData, locationFilter, allLocations, viewMode, selectedMonth]);
 
-  // Filter data for display (charts and table) - only END PRODUCT and TURUNAN
+  // Filter data for display (charts and table) - only FG and TR
   const filteredProductionData = useMemo(() => {
     return allFilteredData.filter(item => 
-      item.jenisproduk === 'END PRODUCT' || item.jenisproduk === 'TURUNAN'
+      item.jenisproduk === 'FG' || item.jenisproduk === 'TR'
     );
   }, [allFilteredData]);
 
@@ -125,19 +133,19 @@ export default function ProductionRecap({
 
   // Calculate statistics
   const statistics = useMemo(() => {
-    // Total Produksi: Only END PRODUCT (in TON, rounded down)
+    // Total Produksi: Only FG (Finished Goods) (in TON, rounded down)
     const endProductQty = allFilteredData
-      .filter(item => item?.jenisproduk === 'END PRODUCT')
+      .filter(item => item?.jenisproduk === 'FG')
       .reduce((sum, item) => sum + (item?.qty || 0), 0);
     
-    // TURUNAN: All TURUNAN products (in TON, rounded down)
+    // TURUNAN: All TR (Derivative) products (in TON, rounded down)
     const turunanQty = allFilteredData
-      .filter(item => item?.jenisproduk === 'TURUNAN')
+      .filter(item => item?.jenisproduk === 'TR')
       .reduce((sum, item) => sum + (item?.qty || 0), 0);
     
-    // Pemakaian Bahan Baku: All BAHAN BAKU + WIP (in TON, rounded down)
+    // Pemakaian Bahan Baku: All BB (Raw Materials) (in TON, rounded down)
     const bahanBakuQty = allFilteredData
-      .filter(item => item?.jenisproduk === 'BAHAN BAKU + WIP')
+      .filter(item => item?.jenisproduk === 'BB')
       .reduce((sum, item) => sum + (item?.qty || 0), 0);
 
     return {
@@ -188,10 +196,7 @@ export default function ProductionRecap({
             Rekap Hasil Produksi Akhir
           </h3>
           <p className="text-sm text-gray-600 mt-1">
-            {viewMode === 'mtd' ? 'Month-to-Date (MTD)' : `${selectedPeriod} Bulan Terakhir`}
-          </p>
-          <p className="text-xs text-gray-500 mt-0.5">
-            (Hanya END PRODUCT & TURUNAN)
+            {viewMode === 'mtd' ? 'Month-to-Date (MTD)' : selectedMonth === 'current' ? 'Bulan Ini' : 'Bulan Sebelumnya'}
           </p>
         </div>
 
@@ -221,17 +226,15 @@ export default function ProductionRecap({
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <label className="text-sm font-medium text-gray-700 mb-2 block">
-                Periode
+                Pilih Bulan
               </label>
-              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">1 Bulan</SelectItem>
-                  <SelectItem value="3">3 Bulan</SelectItem>
-                  <SelectItem value="6">6 Bulan</SelectItem>
-                  <SelectItem value="12">12 Bulan</SelectItem>
+                  <SelectItem value="current">Bulan Ini</SelectItem>
+                  <SelectItem value="previous">Bulan Sebelumnya</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -248,7 +251,7 @@ export default function ProductionRecap({
               <p className="text-2xl sm:text-3xl font-bold text-green-900 mt-1">
                 {formatNumber(statistics.endProductQty)} <span className="text-lg sm:text-xl">TON</span>
               </p>
-              <p className="text-xs text-green-600 mt-1">END PRODUCT</p>
+              <p className="text-xs text-green-600 mt-1">FG (Finished Goods)</p>
             </div>
             <Package className="w-10 h-10 sm:w-12 sm:h-12 text-green-600 opacity-80" />
           </div>
@@ -261,7 +264,7 @@ export default function ProductionRecap({
               <p className="text-2xl sm:text-3xl font-bold text-blue-900 mt-1">
                 {formatNumber(statistics.turunanQty)} <span className="text-lg sm:text-xl">TON</span>
               </p>
-              <p className="text-xs text-blue-600 mt-1">Produk Turunan</p>
+              <p className="text-xs text-blue-600 mt-1">TR (Produk Turunan)</p>
             </div>
             <TrendingUp className="w-10 h-10 sm:w-12 sm:h-12 text-blue-600 opacity-80" />
           </div>
@@ -274,7 +277,7 @@ export default function ProductionRecap({
               <p className="text-2xl sm:text-3xl font-bold text-orange-900 mt-1">
                 {formatNumber(statistics.bahanBakuQty)} <span className="text-lg sm:text-xl">TON</span>
               </p>
-              <p className="text-xs text-orange-600 mt-1">BAHAN BAKU + WIP</p>
+              <p className="text-xs text-orange-600 mt-1">BB (Bahan Baku)</p>
             </div>
             <TrendingDown className="w-10 h-10 sm:w-12 sm:h-12 text-orange-600 opacity-80" />
           </div>
