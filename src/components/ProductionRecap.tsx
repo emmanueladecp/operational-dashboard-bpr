@@ -198,28 +198,28 @@ export default function ProductionRecap({
   const statistics = useMemo(() => {
     // Total Produksi: Only END PRODUCT
     const endProductQty = allFilteredData
-      .filter(item => item.jenisproduk === 'END PRODUCT')
-      .reduce((sum, item) => sum + item.qty, 0);
+      .filter(item => item?.jenisproduk === 'END PRODUCT')
+      .reduce((sum, item) => sum + (item?.qty || 0), 0);
     
     // TURUNAN: All TURUNAN products
     const turunanQty = allFilteredData
-      .filter(item => item.jenisproduk === 'TURUNAN')
-      .reduce((sum, item) => sum + item.qty, 0);
+      .filter(item => item?.jenisproduk === 'TURUNAN')
+      .reduce((sum, item) => sum + (item?.qty || 0), 0);
     
     // Pemakaian Bahan Baku: All BAHAN BAKU + WIP
     const bahanBakuQty = allFilteredData
-      .filter(item => item.jenisproduk === 'BAHAN BAKU + WIP')
-      .reduce((sum, item) => sum + item.qty, 0);
+      .filter(item => item?.jenisproduk === 'BAHAN BAKU + WIP')
+      .reduce((sum, item) => sum + (item?.qty || 0), 0);
 
-    const uniqueProducts = new Set(filteredProductionData.map(item => item.jenisproduk)).size;
-    const uniqueLocations = new Set(filteredProductionData.map(item => item.location)).size;
+    const uniqueProducts = new Set(filteredProductionData.map(item => item?.jenisproduk).filter(Boolean)).size;
+    const uniqueLocations = new Set(filteredProductionData.map(item => item?.location).filter(Boolean)).size;
 
     return {
-      endProductQty,
-      turunanQty,
-      bahanBakuQty: Math.abs(bahanBakuQty), // Display as positive number
-      uniqueProducts,
-      uniqueLocations
+      endProductQty: endProductQty || 0,
+      turunanQty: turunanQty || 0,
+      bahanBakuQty: Math.abs(bahanBakuQty || 0), // Display as positive number
+      uniqueProducts: uniqueProducts || 0,
+      uniqueLocations: uniqueLocations || 0
     };
   }, [allFilteredData, filteredProductionData]);
 
@@ -247,7 +247,10 @@ export default function ProductionRecap({
   };
 
   // Format number with locale
-  const formatNumber = (num: number) => {
+  const formatNumber = (num: number | undefined | null) => {
+    if (num === undefined || num === null || isNaN(num)) {
+      return '0';
+    }
     return num.toLocaleString('id-ID', { maximumFractionDigits: 2 });
   };
 
