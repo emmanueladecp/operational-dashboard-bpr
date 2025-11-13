@@ -140,17 +140,12 @@ export default function ProductionRecap({
       .filter(item => item?.jenisproduk === 'BAHAN BAKU + WIP')
       .reduce((sum, item) => sum + (item?.qty || 0), 0);
 
-    const uniqueProducts = new Set(filteredProductionData.map(item => item?.jenisproduk).filter(Boolean)).size;
-    const uniqueLocations = new Set(filteredProductionData.map(item => item?.location).filter(Boolean)).size;
-
     return {
       endProductQty: endProductQty || 0,
       turunanQty: turunanQty || 0,
-      bahanBakuQty: Math.abs(bahanBakuQty || 0), // Display as positive number
-      uniqueProducts: uniqueProducts || 0,
-      uniqueLocations: uniqueLocations || 0
+      bahanBakuQty: Math.abs(bahanBakuQty || 0) // Display as positive number
     };
-  }, [allFilteredData, filteredProductionData]);
+  }, [allFilteredData]);
 
   // Get unique products for legend
   const uniqueProducts = useMemo(() => {
@@ -245,7 +240,7 @@ export default function ProductionRecap({
       )}
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
           <div className="flex items-center justify-between">
             <div>
@@ -282,19 +277,6 @@ export default function ProductionRecap({
               <p className="text-xs text-orange-600 mt-1">BAHAN BAKU + WIP</p>
             </div>
             <TrendingDown className="w-10 h-10 sm:w-12 sm:h-12 text-orange-600 opacity-80" />
-          </div>
-        </Card>
-
-        <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-purple-700 font-medium">Jenis Produk Akhir</p>
-              <p className="text-2xl sm:text-3xl font-bold text-purple-900 mt-1">
-                {statistics.uniqueProducts}
-              </p>
-              <p className="text-xs text-purple-600 mt-1">END PRODUCT + TURUNAN</p>
-            </div>
-            <Package className="w-10 h-10 sm:w-12 sm:h-12 text-purple-600 opacity-80" />
           </div>
         </Card>
       </div>
