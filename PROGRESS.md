@@ -52,6 +52,162 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-14 - Add Turunan Lain Card to Production Recap
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Addition  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Added Turunan Lain card with TR-LAIN filter
+
+**Description:**
+Added a new "Turunan Lain" (Other Derivatives) card to the Production Recap component, positioned after the Pemakaian Bahan Baku card. This card displays TR-LAIN jenisproduk data.
+
+**Changes Made:**
+
+**1. Import Update:**
+```typescript
+// Added Layers icon to imports
+import { Calendar, GitBranch, Container, Package, Factory, Layers } from 'lucide-react';
+```
+
+**2. Calculation Logic:**
+```typescript
+// Added TR-LAIN filter calculation
+const turunanLainQty = data
+  .filter(item => item?.jenisproduk === 'TR-LAIN')
+  .reduce((sum, item) => sum + (item?.total_qty || 0), 0);
+
+// Convert to TON with standard rounding
+const turunanLainTon = Math.round((turunanLainQty || 0) / 1000);
+```
+
+**3. Statistics Object Update:**
+```typescript
+return {
+  location,
+  locationId: data[0]?.m_location_id,
+  endProductQty: endProductTon,
+  turunanQty: turunanTon,
+  bahanBakuQty: bahanBakuTon,
+  turunanLainQty: turunanLainTon, // NEW
+  rendemenPercentage: rendemenPercentage
+};
+```
+
+**4. New Card Added:**
+```typescript
+<Card className="p-4 bg-gradient-to-br from-teal-50 to-teal-100 border-teal-200">
+  <div className="flex items-center justify-between">
+    <div>
+      <p className="text-sm text-teal-700 font-medium">Turunan Lain</p>
+      <p className="text-2xl sm:text-3xl font-bold text-teal-900 mt-1">
+        {formatNumber(locationStats.turunanLainQty)} <span className="text-lg sm:text-xl">TON</span>
+      </p>
+      <p className="text-xs text-teal-600 mt-1">TR-LAIN</p>
+    </div>
+    <Layers className="w-10 h-10 sm:w-12 sm:h-12 text-teal-600 opacity-80" />
+  </div>
+</Card>
+```
+
+**Card Positioning:**
+- Added as 4th card in the statistics grid
+- Positioned after Pemakaian Bahan Baku (orange card)
+- Before Rendemen FG information card
+- Card order: Total Produksi → Turunan Beras → Pemakaian Bahan Baku → **Turunan Lain** → Rendemen FG
+
+**Design Choices:**
+- **Color Theme:** Teal gradient (from-teal-50 to-teal-100) for visual distinction
+- **Icon:** Layers - represents multiple/other derivative products
+- **Layout:** Consistent with existing cards (same padding, font sizes, structure)
+- **Label:** "Turunan Lain" (Other Derivatives)
+- **Subtitle:** "TR-LAIN" for clarity on data source
+
+**TON Conversion:**
+- Uses same formula as other cards: `Math.round((turunanLainQty || 0) / 1000)`
+- Standard rounding for consistency
+- Displays with "TON" suffix
+
+**Business Impact:**
+- **Complete Picture:** Now tracks all derivative products (TR-BERAS + TR-LAIN)
+- **Data Segmentation:** Separate visibility for rice derivatives vs other derivatives
+- **Analysis:** Enables better analysis of different derivative product types
+- **Consistency:** Maintains same calculation and display patterns as other metrics
+
+**Grid Layout:**
+- Responsive: 1 column (mobile), 2 columns (tablet), 3 columns (desktop)
+- All 4 statistics cards fit within the grid layout
+- Rendemen FG card remains full-width below the grid
+
+**Testing:** Build successful (12.77s), no TypeScript errors, Dashboard.js size: 67.79 kB
+
+**Commit Message:** "feat: add Turunan Lain card to Production Recap with TR-LAIN filter"
+
+---
+
+### 2025-11-14 - Update Turunan Card to Turunan Beras
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Update  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Changed Turunan to Turunan Beras with TR-BERAS filter
+
+**Description:**
+Updated the Turunan card to specifically show "Turunan Beras" and changed the data filter to use 'TR-BERAS' jenisproduk instead of 'TR'.
+
+**Changes Made:**
+
+**1. Caption Update:**
+```typescript
+// OLD: "Turunan"
+<p className="text-sm text-blue-700 font-medium">Turunan</p>
+
+// NEW: "Turunan Beras"
+<p className="text-sm text-blue-700 font-medium">Turunan Beras</p>
+```
+
+**2. Subtitle Update:**
+```typescript
+// OLD: "TR (Produk Turunan)"
+<p className="text-xs text-blue-600 mt-1">TR (Produk Turunan)</p>
+
+// NEW: "TR-BERAS"
+<p className="text-xs text-blue-600 mt-1">TR-BERAS</p>
+```
+
+**3. Filter Logic Update:**
+```typescript
+// OLD: Filter by 'TR'
+const turunanQty = data
+  .filter(item => item?.jenisproduk === 'TR')
+  .reduce((sum, item) => sum + (item?.total_qty || 0), 0);
+
+// NEW: Filter by 'TR-BERAS'
+const turunanQty = data
+  .filter(item => item?.jenisproduk === 'TR-BERAS')
+  .reduce((sum, item) => sum + (item?.total_qty || 0), 0);
+```
+
+**TON Conversion:**
+- TON conversion remains the same: `Math.round((turunanQty || 0) / 1000)`
+- Consistent with Total Produksi and Pemakaian Bahan Baku formulas
+- Uses standard rounding (Math.round) for accurate TON values
+
+**Business Impact:**
+- **More Specific:** Now specifically tracks rice derivative products (TR-BERAS)
+- **Data Accuracy:** Filters only rice-related derivative products
+- **Clarity:** Clear labeling helps users understand what's being measured
+- **Consistency:** Maintains same TON conversion as other metrics
+
+**Card Layout:**
+- Card color and styling unchanged (blue gradient theme)
+- GitBranch icon retained (represents derivative/branching concept)
+- Position remains second card between Total Produksi and Pemakaian Bahan Baku
+
+**Testing:** Build successful (22.31s), no TypeScript errors, all assets generated correctly
+
+**Commit Message:** "feat: update Turunan card to Turunan Beras with TR-BERAS filter"
+
+---
+
 ### 2025-11-14 - Update Icons for Production Statistics Cards
 **Changed By:** Droid (Factory AI)  
 **Type:** UI Enhancement  

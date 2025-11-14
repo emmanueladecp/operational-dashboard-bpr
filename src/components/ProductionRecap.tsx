@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Calendar, GitBranch, Container, Package, Factory } from 'lucide-react';
+import { Calendar, GitBranch, Container, Package, Factory, Layers } from 'lucide-react';
 import { SupabaseClient } from "@supabase/supabase-js";
 
 interface ProductionRecapData {
@@ -168,16 +168,21 @@ export default function ProductionRecap({
         .reduce((sum, item) => sum + (item?.total_qty || 0), 0);
       
       const turunanQty = data
-        .filter(item => item?.jenisproduk === 'TR')
+        .filter(item => item?.jenisproduk === 'TR-BERAS')
         .reduce((sum, item) => sum + (item?.total_qty || 0), 0);
       
       const bahanBakuQty = data
         .filter(item => item?.jenisproduk === 'WIP-BERAS')
         .reduce((sum, item) => sum + (item?.total_qty || 0), 0);
+      
+      const turunanLainQty = data
+        .filter(item => item?.jenisproduk === 'TR-LAIN')
+        .reduce((sum, item) => sum + (item?.total_qty || 0), 0);
 
       const endProductTon = Math.round((endProductQty || 0) / 1000); // Convert to TON and round
       const turunanTon = Math.round((turunanQty || 0) / 1000); // Convert to TON and round
       const bahanBakuTon = Math.round(Math.abs(bahanBakuQty || 0) / 1000); // Convert to TON and round
+      const turunanLainTon = Math.round((turunanLainQty || 0) / 1000); // Convert to TON and round
       
       // Calculate Rendemen FG = (Total Produksi / Pemakaian Bahan Baku) * 100
       const rendemenPercentage = bahanBakuTon > 0 
@@ -190,6 +195,7 @@ export default function ProductionRecap({
         endProductQty: endProductTon,
         turunanQty: turunanTon,
         bahanBakuQty: bahanBakuTon,
+        turunanLainQty: turunanLainTon,
         rendemenPercentage: rendemenPercentage
       };
     });
@@ -234,10 +240,10 @@ export default function ProductionRecap({
       {/* Header and Controls */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h3 className="text-xl sm:text-2xl font-bold text-green-800 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-green-800 flex items-center gap-2">
             <Package className="w-6 h-6" />
-            Rekap Hasil Produksi Akhir
-          </h3>
+            Hasil Produksi
+          </h1>
           <p className="text-sm text-gray-600 mt-1">
             {viewMode === 'mtd' 
               ? 'Month-to-Date (MTD)' 
@@ -319,11 +325,11 @@ export default function ProductionRecap({
                 <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-blue-700 font-medium">Turunan</p>
+                      <p className="text-sm text-blue-700 font-medium">Turunan Beras</p>
                       <p className="text-2xl sm:text-3xl font-bold text-blue-900 mt-1">
                         {formatNumber(locationStats.turunanQty)} <span className="text-lg sm:text-xl">TON</span>
                       </p>
-                      <p className="text-xs text-blue-600 mt-1">TR (Produk Turunan)</p>
+                      <p className="text-xs text-blue-600 mt-1">TR-BERAS</p>
                     </div>
                     <GitBranch className="w-10 h-10 sm:w-12 sm:h-12 text-blue-600 opacity-80" />
                   </div>
@@ -341,8 +347,22 @@ export default function ProductionRecap({
                     <Container className="w-10 h-10 sm:w-12 sm:h-12 text-orange-600 opacity-80" />
                   </div>
                 </Card>
-              </div>
 
+                <Card className="p-4 bg-gradient-to-br from-teal-50 to-teal-100 border-teal-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-teal-700 font-medium">Turunan Lain</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-teal-900 mt-1">
+                        {formatNumber(locationStats.turunanLainQty)} <span className="text-lg sm:text-xl">TON</span>
+                      </p>
+                      <p className="text-xs text-teal-600 mt-1">TR-LAIN</p>
+                    </div>
+                    <Layers className="w-10 h-10 sm:w-12 sm:h-12 text-teal-600 opacity-80" />
+                  </div>
+                </Card>
+
+              
+              </div>
               {/* Rendemen FG Information */}
               <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
                 <div className="flex items-center justify-between">
@@ -365,6 +385,7 @@ export default function ProductionRecap({
                   </div>
                 </div>
               </Card>
+              
             </div>
           ))}
         </div>
