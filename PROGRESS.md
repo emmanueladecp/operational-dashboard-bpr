@@ -53,6 +53,101 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-14 - Add Location Filter Dropdown to Production Recap
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Enhancement  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Added location filter dropdown
+
+**Description:**
+Added a location filter dropdown to Production Recap component, allowing users to view all locations or filter by specific location.
+
+**Changes Made:**
+
+**1. State Management:**
+```typescript
+// Added new state for location selection
+const [selectedLocation, setSelectedLocation] = useState<string>('all'); // 'all' or location name
+```
+
+**2. Filter Logic Update:**
+```typescript
+// OLD: Used locationFilter from Dashboard props
+if (!locationFilter.includes('all') && locationFilter.length > 0) {
+  const selectedLocationNames = locationFilter
+    .map(locValue => allLocations.find(loc => loc.value === locValue)?.name)
+    .filter(Boolean);
+  filtered = filtered.filter(item => selectedLocationNames.includes(item.location));
+}
+
+// NEW: Use local selectedLocation state
+if (selectedLocation !== 'all') {
+  filtered = filtered.filter(item => item.location === selectedLocation);
+}
+```
+
+**3. UI Components Added:**
+```typescript
+{/* Location Filter Dropdown */}
+<div className="flex-1">
+  <label className="text-sm font-medium text-gray-700 mb-2 block">
+    Pilih Lokasi
+  </label>
+  <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+    <SelectTrigger>
+      <SelectValue placeholder="Semua Lokasi" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="all">Semua Lokasi</SelectItem>
+      {allLocations
+        .filter(loc => loc.is_active)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((location) => (
+          <SelectItem key={location.id} value={location.name}>
+            {location.name}
+          </SelectItem>
+        ))}
+    </SelectContent>
+  </Select>
+</div>
+```
+
+**Filter Card Layout:**
+- **MTD Mode:** Shows location filter only
+- **Periodic Mode:** Shows location filter + month filter side by side
+- Both filters are always visible in a single Card component
+- Responsive: Stack vertically on mobile, side-by-side on desktop
+
+**User Experience:**
+- **Default Selection:** "Semua Lokasi" (shows all locations)
+- **Location Selection:** User can select specific location from dropdown
+- **Dynamic Filtering:** Statistics cards update immediately when location changes
+- **Alphabetical Sorting:** Locations sorted A-Z in dropdown
+- **Active Only:** Only shows active locations (is_active = true)
+
+**Behavior:**
+1. **"Semua Lokasi" Selected:** Displays all locations with their statistics
+2. **Specific Location Selected:** Shows only that location's statistics
+3. **Combined with Month Filter:** Both filters work together in Periodic mode
+4. **Combined with MTD:** Location filter works with current month data
+
+**Business Impact:**
+- **Focused Analysis:** Users can focus on specific location performance
+- **Comparison:** Easy to switch between locations for comparison
+- **Flexibility:** Option to view all locations or drill down to specific one
+- **User Control:** Independent from Dashboard's global location filter
+
+**Visual Changes:**
+- Filter card now always visible (not just in Periodic mode)
+- Two-column layout in filter card: Location | Month (periodic only)
+- Clean, consistent UI with other dashboard filters
+
+**Testing:** Ready for build verification
+
+**Commit Message:** "feat: add location filter dropdown to Production Recap for flexible data viewing"
+
+---
+
 ### 2025-11-14 - Update Location Header Icon from Package to Factory
 **Changed By:** Droid (Factory AI)  
 **Type:** UI Enhancement  

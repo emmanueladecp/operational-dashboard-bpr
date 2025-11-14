@@ -34,6 +34,7 @@ export default function ProductionRecap({
   const [isLoadingProduction, setIsLoadingProduction] = useState(true);
   const [viewMode, setViewMode] = useState<'mtd' | 'periodic'>('mtd');
   const [selectedMonth, setSelectedMonth] = useState<string>(''); // Format: YYYY-MM
+  const [selectedLocation, setSelectedLocation] = useState<string>('all'); // 'all' or location name
   const [error, setError] = useState<string | null>(null);
 
   // Helper function to format month name in Indonesian
@@ -104,15 +105,9 @@ export default function ProductionRecap({
   const allFilteredData = useMemo(() => {
     let filtered = [...productionData];
 
-    // Apply location filter
-    if (!locationFilter.includes('all') && locationFilter.length > 0) {
-      const selectedLocationNames = locationFilter
-        .map(locValue => allLocations.find(loc => loc.value === locValue)?.name)
-        .filter(Boolean);
-      
-      filtered = filtered.filter(item => 
-        selectedLocationNames.includes(item.location)
-      );
+    // Apply local location filter (from dropdown)
+    if (selectedLocation !== 'all') {
+      filtered = filtered.filter(item => item.location === selectedLocation);
     }
 
     // Apply date filter based on view mode
@@ -140,7 +135,7 @@ export default function ProductionRecap({
     }
 
     return filtered;
-  }, [productionData, locationFilter, allLocations, viewMode, selectedMonth]);
+  }, [productionData, selectedLocation, viewMode, selectedMonth]);
 
   // Filter data for display (charts and table) - only FG and TR
   const filteredProductionData = useMemo(() => {
@@ -284,9 +279,33 @@ export default function ProductionRecap({
       </div>
 
       {/* Filters */}
-      {viewMode === 'periodic' && (
-        <Card className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
+      <Card className="p-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          {/* Location Filter */}
+          <div className="flex-1">
+            <label className="text-sm font-medium text-gray-700 mb-2 block">
+              Pilih Lokasi
+            </label>
+            <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+              <SelectTrigger>
+                <SelectValue placeholder="Semua Lokasi" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Lokasi</SelectItem>
+                {allLocations
+                  .filter(loc => loc.is_active)
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((location) => (
+                    <SelectItem key={location.id} value={location.name}>
+                      {location.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Month Filter - Only show in Periodic mode */}
+          {viewMode === 'periodic' && (
             <div className="flex-1">
               <label className="text-sm font-medium text-gray-700 mb-2 block">
                 Pilih Bulan
@@ -304,9 +323,9 @@ export default function ProductionRecap({
                 </SelectContent>
               </Select>
             </div>
-          </div>
-        </Card>
-      )}
+          )}
+        </div>
+      </Card>
 
       {/* Statistics Cards - Separated by Location */}
       {statisticsByLocation.length > 0 && (
