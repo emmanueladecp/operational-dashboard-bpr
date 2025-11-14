@@ -52,6 +52,539 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-14 - Update Icons for Production Statistics Cards
+**Changed By:** Droid (Factory AI)  
+**Type:** UI Enhancement  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Replaced icons with more semantic alternatives
+
+**Description:**
+Updated the icons for the three main production statistics cards to better represent their semantic meaning and improve visual clarity.
+
+**Icon Changes:**
+
+1. **Total Produksi (FG):** `Package` → `Factory`
+   - Reason: Factory icon clearly represents manufacturing/production output
+   - Visual: Strong connection to finished goods production
+
+2. **Pemakaian Bahan Baku (WIP-BERAS):** `TrendingDown` → `Container`
+   - Reason: Container represents raw material storage and usage
+   - Visual: Association with bulk materials and inputs
+
+3. **Turunan (TR):** `TrendingUp` → `GitBranch`
+   - Reason: Branch icon is perfect metaphor for derivative/by-products
+   - Visual: Shows concept of branching from main production
+
+**Code Changes:**
+```typescript
+// Updated imports
+import { Calendar, GitBranch, Container, Package, Factory } from 'lucide-react';
+
+// Total Produksi card
+<Factory className="w-10 h-10 sm:w-12 sm:h-12 text-green-600 opacity-80" />
+
+// Turunan card
+<GitBranch className="w-10 h-10 sm:w-12 sm:h-12 text-blue-600 opacity-80" />
+
+// Pemakaian Bahan Baku card
+<Container className="w-10 h-10 sm:w-12 sm:h-12 text-orange-600 opacity-80" />
+```
+
+**Benefits:**
+- ✅ Clear semantic meaning for each metric
+- ✅ Better visual distinction between card types
+- ✅ More intuitive and professional representation
+- ✅ Consistent design language with lucide-react icons
+
+**Testing:** Build successful (8.36s), no TypeScript errors, all assets generated correctly
+
+**Commit Message:** "feat: update production statistics card icons for better semantic clarity"
+
+---
+
+### 2025-11-14 - Change Caption from TURUNAN to Turunan
+**Changed By:** Droid (Factory AI)  
+**Type:** UI Polish  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Changed text capitalization
+
+**Description:**
+Updated the card label from all-caps "TURUNAN" to title case "Turunan" for better readability and consistent styling with other card labels.
+
+**Changes Made:**
+
+**Text Update:**
+```typescript
+// OLD: All caps
+<p className="text-sm text-blue-700 font-medium">TURUNAN</p>
+
+// NEW: Title case
+<p className="text-sm text-blue-700 font-medium">Turunan</p>
+```
+
+**Visual Consistency:**
+- **Total Produksi** - Title case ✓
+- **Turunan** - Title case ✓ (updated)
+- **Pemakaian Bahan Baku** - Title case ✓
+- **Rendemen FG** - Title case ✓
+
+**Impact:**
+- More readable and professional appearance
+- Consistent with other card labels
+- Less "shouty" visual presentation
+- Maintains Indonesian language standard for product type names
+
+**Testing:** Build successful (29.21s), no TypeScript errors, all chunks generated correctly
+
+**Commit Message:** "style: change TURUNAN to Turunan for consistent title case formatting"
+
+---
+
+### 2025-11-14 - Round Rendemen FG to Standard Integer
+**Changed By:** Droid (Factory AI)  
+**Type:** Display Update  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Changed Rendemen FG display to standard rounding
+
+**Description:**
+Updated Rendemen FG percentage display to use standard rounding (no decimal places) instead of showing 2 decimal places, for cleaner and simpler visualization.
+
+**Changes Made:**
+
+**Display Logic Change:**
+```typescript
+// OLD: Show 2 decimal places
+{locationStats.rendemenPercentage.toFixed(2)}
+// Example: 80.00%, 75.45%, 82.67%
+
+// NEW: Standard rounding (no decimals)
+{Math.round(locationStats.rendemenPercentage)}
+// Example: 80%, 75%, 83%
+```
+
+**Rounding Behavior:**
+| Actual Value | Old Display (.toFixed(2)) | New Display (Math.round) |
+|--------------|---------------------------|--------------------------|
+| 80.00% | 80.00% | 80% |
+| 80.45% | 80.45% | 80% |
+| 80.50% | 80.50% | **81%** |
+| 80.67% | 80.67% | **81%** |
+| 75.23% | 75.23% | 75% |
+| 75.89% | 75.89% | **76%** |
+
+**Visual Impact:**
+- **Cleaner Display:** Removes unnecessary decimal places
+- **Easier Reading:** Whole numbers are quicker to scan and compare
+- **Consistent:** Matches other TON values which also use standard rounding
+- **Simplified:** Percentage accuracy to 2 decimals not critical for efficiency metric
+
+**Business Justification:**
+- Rendemen percentage is a general efficiency indicator, not requiring decimal precision
+- Whole number percentages (e.g., 80%, 75%, 90%) are sufficient for:
+  - Performance comparison between locations
+  - Trend monitoring over time
+  - Management decision-making
+- Reduces visual clutter on dashboard
+
+**Examples:**
+- **Before:** "Rendemen FG: 80.00%", "75.45%", "82.67%"
+- **After:** "Rendemen FG: 80%", "75%", "83%"
+
+**Testing:** Build successful (7.96s), no TypeScript errors, all chunks generated correctly
+
+**Commit Message:** "refactor: round Rendemen FG percentage to integer for cleaner display"
+
+---
+
+### 2025-11-14 - Add Rendemen FG Percentage Display
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Addition  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Added Rendemen FG calculation and display
+
+**Description:**
+Added Rendemen FG (Finished Goods yield) percentage calculation and display for each location. Rendemen FG shows the efficiency ratio of finished goods production relative to raw material consumption.
+
+**Changes Made:**
+
+**Calculation Logic:**
+```typescript
+// Rendemen FG = (Total Produksi / Pemakaian Bahan Baku) × 100%
+const rendemenPercentage = bahanBakuTon > 0 
+  ? (endProductTon / bahanBakuTon) * 100 
+  : 0;
+```
+
+**Formula:**
+- **Rendemen FG (%)** = (Total Produksi FG / Pemakaian Bahan Baku WIP-BERAS) × 100%
+- **Example:** 
+  - Total Produksi: 80 TON (FG)
+  - Pemakaian Bahan Baku: 100 TON (WIP-BERAS)
+  - Rendemen FG: (80 / 100) × 100% = **80.00%**
+
+**UI Addition:**
+1. **New Card Added:** Purple-themed Rendemen FG card below the 3 main statistics cards
+2. **Card Design:**
+   - Title: "Rendemen FG"
+   - Subtitle: "Total Produksi / Pemakaian Bahan Baku × 100%"
+   - Large percentage value (2 decimal places)
+   - Bar chart icon in purple circle
+   - Gradient background from purple-50 to purple-100
+
+**Visual Structure:**
+```
+Location Header
+├── Card 1: Total Produksi (Green)
+├── Card 2: TURUNAN (Blue)
+├── Card 3: Pemakaian Bahan Baku (Orange)
+└── Card 4: Rendemen FG (Purple) [NEW]
+```
+
+**Display Format:**
+- Percentage shown with 2 decimal places (e.g., "80.00%", "75.50%")
+- Formula description visible for user clarity
+- Icon: Bar chart SVG (represents efficiency/metrics)
+
+**Safety Handling:**
+- Division by zero check: If Bahan Baku = 0, Rendemen = 0% (prevents NaN)
+- Always shows percentage, even if 0
+
+**Business Value:**
+- **Production Efficiency Metric:** Shows how efficiently raw materials are converted to finished goods
+- **Quality Indicator:** Higher percentage = better yield/less waste
+- **Location Comparison:** Easy to compare efficiency across different production locations
+- **Performance Tracking:** Can monitor improvements over time (MTD vs Periodic)
+
+**Example Scenarios:**
+| Total Produksi | Pemakaian BB | Rendemen FG | Interpretation |
+|----------------|--------------|-------------|----------------|
+| 80 TON | 100 TON | 80.00% | Good yield |
+| 75 TON | 100 TON | 75.00% | Moderate yield |
+| 90 TON | 100 TON | 90.00% | Excellent yield |
+| 0 TON | 100 TON | 0.00% | No production |
+| 50 TON | 0 TON | 0.00% | No raw material |
+
+**Per-Location Display:**
+Each location shows its own Rendemen FG percentage, allowing:
+- Direct comparison between locations
+- Identification of high/low performing locations
+- Location-specific efficiency tracking
+
+**Testing:** Build successful (11.24s), no TypeScript errors, Dashboard.js increased to 67.02 KB
+
+**Commit Message:** "feat: add Rendemen FG percentage display showing production efficiency per location"
+
+---
+
+### 2025-11-14 - Change Production Rounding from Floor to Round
+**Changed By:** Droid (Factory AI)  
+**Type:** Bug Fix / Calculation Update  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Changed rounding method from floor to standard round
+
+**Description:**
+Updated production quantity calculations to use standard rounding (`Math.round()`) instead of floor rounding (`Math.floor()`). This provides more accurate TON values that follow mathematical rounding rules (0.5 and above rounds up, below 0.5 rounds down).
+
+**Changes Made:**
+
+**Rounding Logic Changes:**
+```typescript
+// OLD: Floor rounding (always round down)
+endProductQty: Math.floor((endProductQty || 0) / 1000)    // 1549.9 → 1 TON
+turunanQty: Math.floor((turunanQty || 0) / 1000)          // 1549.9 → 1 TON
+bahanBakuQty: Math.floor(Math.abs(bahanBakuQty || 0) / 1000) // 1549.9 → 1 TON
+
+// NEW: Standard rounding (round to nearest integer)
+endProductQty: Math.round((endProductQty || 0) / 1000)    // 1549.9 → 2 TON
+turunanQty: Math.round((turunanQty || 0) / 1000)          // 1549.9 → 2 TON
+bahanBakuQty: Math.round(Math.abs(bahanBakuQty || 0) / 1000) // 1549.9 → 2 TON
+```
+
+**Rounding Behavior Comparison:**
+| Quantity (KG) | Floor (Old) | Round (New) | Difference |
+|---------------|-------------|-------------|------------|
+| 1,250 | 1 TON | 1 TON | Same |
+| 1,499 | 1 TON | 1 TON | Same |
+| 1,500 | 1 TON | **2 TON** | +1 TON |
+| 1,750 | 1 TON | **2 TON** | +1 TON |
+| 2,499 | 2 TON | 2 TON | Same |
+| 2,500 | 2 TON | **3 TON** | +1 TON |
+
+**Mathematical Justification:**
+- **Standard Rounding (ROUND):** Follows mathematical convention - values >= 0.5 round up, < 0.5 round down
+- **More Accurate:** Better represents actual quantities (e.g., 1.9 TON should be 2 TON, not 1 TON)
+- **Industry Standard:** Most business reporting uses standard rounding, not floor
+- **SQL Equivalent:** `ROUND(qty/1000, 0)` matches this behavior
+
+**Impact on All Product Types:**
+1. **Total Produksi (FG):** Now uses `Math.round()`
+2. **TURUNAN (TR):** Now uses `Math.round()`
+3. **Pemakaian Bahan Baku (WIP-BERAS):** Now uses `Math.round()`
+
+**Business Impact:**
+- **More Accurate Reporting:** Values closer to actual tonnage
+- **Consistency:** Matches standard business practices for rounding
+- **Slight Increase in TON Values:** Quantities that were rounded down will now round up if >= 0.5
+- **Example:** 1,750 KG was reported as 1 TON, now correctly shows as 2 TON
+
+**Comment Updates:**
+- Changed all code comments from "Convert to TON and round down" → "Convert to TON and round"
+
+**Testing:** Build successful (8.06s), no TypeScript errors, all chunks generated correctly
+
+**Commit Message:** "fix: change production rounding from floor to standard round for accurate TON values"
+
+---
+
+### 2025-11-14 - Update Periodic Filter to Show Actual Month Names
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Enhancement  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Changed periodic filter to display actual month names
+
+**Description:**
+Updated Production Recap periodic filter to display actual month names (e.g., "November 2025", "Oktober 2025") instead of generic labels like "Bulan Ini" and "Bulan Sebelumnya". The dropdown now dynamically lists all available months from the data.
+
+**Changes Made:**
+
+**State Management Changes:**
+1. **Old State:** `selectedMonth: 'current' | 'previous'` (limited to 2 options)
+2. **New State:** `selectedMonth: string` (format: "YYYY-MM", dynamic from data)
+3. **Default Selection:** Automatically selects most recent month from available data
+
+**Helper Function Added:**
+```typescript
+const formatMonthName = (dateString: string) => {
+  const date = new Date(dateString);
+  const monthNames = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+  return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+};
+```
+
+**Available Months Logic:**
+```typescript
+// Extract unique months from data
+const availableMonths = useMemo(() => {
+  const months = Array.from(new Set(productionData.map(item => {
+    const date = new Date(item.month);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  }))).sort().reverse(); // Most recent first
+  
+  return months;
+}, [productionData]);
+
+// Auto-select most recent month
+useEffect(() => {
+  if (availableMonths.length > 0 && !selectedMonth) {
+    setSelectedMonth(availableMonths[0]);
+  }
+}, [availableMonths, selectedMonth]);
+```
+
+**UI Changes:**
+1. **Dropdown Options:** Dynamic list showing all available months in Indonesian
+   - Example: "November 2025", "Oktober 2025", "September 2025", etc.
+2. **Subtitle Display:** Shows selected month name instead of "Bulan Ini/Sebelumnya"
+3. **Empty State Message:** Displays specific month name if no data found
+4. **Placeholder:** "Pilih bulan..." when no month selected
+
+**Filter Logic Changes:**
+```typescript
+// Old: Hard-coded current/previous calculation
+if (selectedMonth === 'previous') {
+  // Calculate previous month...
+}
+
+// New: Direct parsing from selected value
+if (selectedMonth) {
+  const [targetYear, targetMonth] = selectedMonth.split('-').map(Number);
+  filtered = filtered.filter(item => {
+    const itemDate = new Date(item.month);
+    return itemDate.getFullYear() === targetYear && 
+           itemDate.getMonth() + 1 === targetMonth;
+  });
+}
+```
+
+**User Experience Improvements:**
+- **Clarity:** Users can see exact month names instead of relative terms
+- **Flexibility:** Not limited to just current/previous month - can select any available month
+- **Automatic:** No need to calculate which month is "previous"
+- **Data-Driven:** Only shows months that have actual data available
+- **Localized:** Month names in Bahasa Indonesia
+
+**Business Impact:**
+- **Historical Analysis:** Users can now access any historical month with production data
+- **Better Navigation:** Clear indication of which month's data is being viewed
+- **Consistency:** Month names match Indonesian business calendar terminology
+- **Scalability:** As more months of data accumulate, all remain accessible via dropdown
+
+**Testing:** Build successful (8.54s), no TypeScript errors, all chunks generated correctly
+
+**Commit Message:** "feat: update periodic filter to show actual month names instead of relative labels"
+
+---
+
+### 2025-11-14 - Separate Production Recap Display by Location
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Enhancement  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Implemented location-separated statistics display
+
+**Description:**
+Updated Production Recap component to display statistics separated by location instead of aggregated totals. Each location now shows its own set of statistics cards for Total Produksi, TURUNAN, and Pemakaian Bahan Baku.
+
+**Changes Made:**
+
+**Statistics Calculation Changes:**
+1. **Old Approach:** Single aggregated statistics across all filtered locations
+2. **New Approach:** Statistics grouped and calculated per location
+3. **Data Structure:**
+   - Groups data by location using Map
+   - Calculates FG, TR, and WIP-BERAS totals for each location separately
+   - Sorts locations alphabetically
+
+**UI Changes:**
+1. **Location Sections:** Each location displays as a separate section with:
+   - Location header with icon and name
+   - Border separator for visual distinction
+   - Three statistics cards (FG, TR, WIP-BERAS)
+2. **Card Layout:** Same 3-column grid layout maintained per location
+3. **Visual Hierarchy:**
+   - Location name prominently displayed above each set of cards
+   - Consistent color scheme maintained (green for FG, blue for TR, orange for WIP-BERAS)
+
+**Technical Implementation:**
+```typescript
+// New statistics structure
+const statisticsByLocation = useMemo(() => {
+  // Group by location
+  const locationGroups = new Map<string, ProductionRecapData[]>();
+  allFilteredData.forEach(item => {
+    const existing = locationGroups.get(item.location) || [];
+    locationGroups.set(item.location, [...existing, item]);
+  });
+
+  // Calculate per location
+  const result = Array.from(locationGroups.entries()).map(([location, data]) => ({
+    location,
+    locationId: data[0]?.m_location_id,
+    endProductQty: Math.floor((FG_sum || 0) / 1000),
+    turunanQty: Math.floor((TR_sum || 0) / 1000),
+    bahanBakuQty: Math.floor((WIP_BERAS_sum || 0) / 1000)
+  }));
+
+  return result.sort((a, b) => a.location.localeCompare(b.location));
+}, [allFilteredData]);
+```
+
+**UI Structure:**
+```jsx
+{statisticsByLocation.map((locationStats) => (
+  <div key={locationStats.locationId}>
+    {/* Location Header */}
+    <h4>{locationStats.location}</h4>
+    
+    {/* Statistics Cards Grid */}
+    <div className="grid grid-cols-3">
+      <Card>Total Produksi: {locationStats.endProductQty} TON</Card>
+      <Card>TURUNAN: {locationStats.turunanQty} TON</Card>
+      <Card>Bahan Baku: {locationStats.bahanBakuQty} TON</Card>
+    </div>
+  </div>
+))}
+```
+
+**Business Impact:**
+- **Location Visibility:** Users can now see production data per location clearly
+- **Comparison:** Easier to compare performance across different locations
+- **Filtering:** When location filter is applied, only selected locations are shown
+- **RLS Compliance:** Maintains existing RLS policies (users only see authorized locations)
+
+**Behavior:**
+- **MTD Mode:** Shows current month data separated by location
+- **Periodic Mode:** Shows selected month (current/previous) separated by location
+- **Location Filter:** Respects location filter selections
+- **Empty State:** If no data for any location, shows standard empty state message
+
+**Testing:** Build successful (8.43s), no TypeScript errors, all modules transformed correctly
+
+**Commit Message:** "feat: separate Production Recap display by location for MTD and periodic views"
+
+---
+
+### 2025-11-14 - Update Production Recap to Use Monthly Aggregation and WIP-BERAS
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Update  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Switched to production_recap_monthly view and updated Bahan Baku filter
+
+**Description:**
+Updated Production Recap component to fetch data from `production_recap_monthly` aggregation view instead of `production_recap` table, and corrected the Bahan Baku filter to use 'WIP-BERAS' instead of 'BB'.
+
+**Changes Made:**
+
+**Data Source Changes:**
+1. **Table Migration:** Changed from `production_recap` table → `production_recap_monthly` view
+2. **Field Updates:**
+   - `period_date` → `month` (date truncated to month)
+   - `qty` → `total_qty` (aggregated sum per month)
+   - Added optional fields: `record_count`, `avg_qty`, `min_qty`, `max_qty`
+3. **Interface Updates:** Updated TypeScript interface to match new view structure
+
+**Product Type Filter Corrections:**
+1. **Total Produksi:** Continues filtering `jenisproduk = 'FG'` ✓
+2. **TURUNAN:** Continues filtering `jenisproduk = 'TR'` ✓
+3. **Pemakaian Bahan Baku:** Changed from `jenisproduk = 'BB'` → `jenisproduk = 'WIP-BERAS'`
+
+**UI Updates:**
+- Statistics card label changed from "BB (Bahan Baku)" → "WIP-BERAS"
+- All calculations remain in TON with floor rounding
+
+**Technical Details:**
+```typescript
+// Interface changes
+interface ProductionRecapData {
+  m_location_id: number;
+  location: string;
+  month: string;              // Changed from period_date
+  jenisproduk: string;
+  total_qty: number;          // Changed from qty
+  record_count?: number;      // New aggregation fields
+  avg_qty?: number;
+  min_qty?: number;
+  max_qty?: number;
+}
+
+// Filter changes
+const bahanBakuQty = allFilteredData
+  .filter(item => item?.jenisproduk === 'WIP-BERAS')  // Changed from 'BB'
+  .reduce((sum, item) => sum + (item?.total_qty || 0), 0);  // Changed from qty
+```
+
+**Database Schema:**
+- Uses `production_recap_monthly` view which aggregates data by month using `DATE_TRUNC`
+- Groups by: `m_location_id`, `location`, `month`, `jenisproduk`
+- Provides monthly totals for each product type per location
+
+**Business Impact:**
+- **Performance:** Using monthly aggregation reduces data volume for better query performance
+- **Data Accuracy:** Monthly totals are pre-calculated, ensuring consistency
+- **Product Type:** Now correctly tracks WIP-BERAS (Work In Progress - Rice) for raw material usage
+
+**TypeScript Fixes:**
+- Fixed `selectedPeriod` undefined error (changed to use `selectedMonth`)
+- Fixed Select component type safety with explicit type cast
+
+**Testing:** Build successful (37.94s), no TypeScript errors, all chunks generated correctly
+
+**Commit Message:** "feat: switch ProductionRecap to use production_recap_monthly view and WIP-BERAS filter"
+
+---
+
 ### 2025-11-13 - Change Periodic Filter to Show Individual Months
 **Changed By:** Droid (Factory AI)  
 **Type:** Feature Update  
