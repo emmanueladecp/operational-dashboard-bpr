@@ -53,6 +53,66 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-14 - Remove Chart and Legend from Level Stok BB
+**Changed By:** Droid (Factory AI)  
+**Type:** UI Simplification  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Removed chart and legend from Level Stok BB tab
+
+**Description:**
+Removed the bar chart and category legend from Level Stok BB (Raw Material Stock) tab to simplify the UI and focus on the stock list view.
+
+**Changes Made:**
+
+**Removed Components:**
+1. ❌ BarChart component with stock data visualization
+2. ❌ ResponsiveContainer wrapper
+3. ❌ CartesianGrid, XAxis, YAxis, Tooltip
+4. ❌ Legend section showing all categories
+5. ❌ Two-column grid layout (lg:grid-cols-2)
+
+**Kept Components:**
+1. ✅ Header with title "Level Stok Bahan Baku (BB)"
+2. ✅ Location filter checkboxes
+3. ✅ Stock list with clickable cards
+4. ✅ Loading and empty states
+5. ✅ Stock detail dialog functionality
+
+**Before:**
+```
+Layout: Grid 2 columns (lg:grid-cols-2)
+├── Left: Stock List (cards)
+└── Right: Bar Chart + Legend
+```
+
+**After:**
+```
+Layout: Full width single column
+└── Stock List (cards only)
+```
+
+**Benefits:**
+- **Simpler UI:** Removes visual clutter from stock view
+- **Better Focus:** Users concentrate on actual stock list data
+- **Improved Performance:** No chart rendering overhead
+- **Faster Load:** Reduced component complexity
+- **More Space:** Stock list can utilize full width
+- **Consistent:** Matches user preference for list-based views
+
+**Visual Impact:**
+- Stock cards now take full width instead of half
+- No chart visualization of stock data
+- No color-coded category legend
+- Cleaner, more minimalist interface
+
+**Note:** Level Stok FG still retains its chart for comparison if needed.
+
+**Testing:** Ready for build verification
+
+**Commit Message:** "refactor: remove chart and legend from Level Stok BB for simpler UI"
+
+---
+
 ### 2025-11-14 - Filter Location Dropdown to Show Only Locations with Data
 **Changed By:** Droid (Factory AI)  
 **Type:** Enhancement  

@@ -1319,91 +1319,35 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Stock List */}
-                  <div className="space-y-3">
-                    {isLoadingStock ? (
-                      <div className="text-center py-8 text-green-600">Memuat data stok...</div>
-                    ) : processedStockData.length === 0 ? (
-                      <div className="text-center py-8 text-green-600">Tidak ada data stok untuk lokasi Anda</div>
-                    ) : (
-                      processedStockData.map((item, index) => (
-                        <div
-                          key={index}
-                          className="p-4 bg-green-50 rounded-lg border border-green-100 cursor-pointer hover:bg-green-100 transition-colors"
-                          onClick={() => handleStockItemClick(item, "RAW MATERIAL")}
-                        >
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-                            <div className="flex-1">
-                              <h4 className="font-medium text-green-800">{item.category}</h4>
-                              <div className="flex flex-wrap gap-2 mt-1">
-                                <Badge variant="outline" className="text-xs border-green-300 text-green-700">
-                                  {item.location}
-                                </Badge>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-bold text-green-800">{item.quantity.toLocaleString('id-ID')} {item.unit}</p>
+                {/* Stock List */}
+                <div className="space-y-3">
+                  {isLoadingStock ? (
+                    <div className="text-center py-8 text-green-600">Memuat data stok...</div>
+                  ) : processedStockData.length === 0 ? (
+                    <div className="text-center py-8 text-green-600">Tidak ada data stok untuk lokasi Anda</div>
+                  ) : (
+                    processedStockData.map((item, index) => (
+                      <div
+                        key={index}
+                        className="p-4 bg-green-50 rounded-lg border border-green-100 cursor-pointer hover:bg-green-100 transition-colors"
+                        onClick={() => handleStockItemClick(item, "RAW MATERIAL")}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-green-800">{item.category}</h4>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs border-green-300 text-green-700">
+                                {item.location}
+                              </Badge>
                             </div>
                           </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  
-                  {/* Stock Chart */}
-                  {/* <div className="h-80"> */}
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">  
-                        <BarChart data={processedStockData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#dcfce7" />
-                          <XAxis
-                            dataKey="location"
-                            tick={{ fontSize: 12 }}
-                            stroke="#166534"
-                          />
-                          <YAxis tick={{ fontSize: 12 }} stroke="#166534" />
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: '#f0fdf4',
-                              border: '1px solid #bbf7d0',
-                              borderRadius: '8px'
-                            }}
-                            labelFormatter={(label) => `Location: ${label}`}
-                            formatter={(value, name, props) => [
-                              `${Number(value).toLocaleString('id-ID')} ${props.payload?.unit || 'Kilogram'}`,
-                              `Category: ${props.payload?.category || 'N/A'}`
-                            ]}
-                          />
-                          <Bar dataKey="quantity" radius={[4, 4, 0, 0]}>
-                            {processedStockData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={getCategoryColor(entry.category, index)} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
-                    <div>
-                      {/* Legend */}
-                      {uniqueCategories.length > 0 && (
-                        <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-100">
-                          <h5 className="text-sm font-medium text-green-800 mb-3">Kategori:</h5>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-                            {uniqueCategories.map((category, index) => (
-                              <div key={category} className="flex items-center space-x-2">
-                                <div
-                                  className="w-4 h-4 rounded-sm border border-gray-300"
-                                  style={{ backgroundColor: getCategoryColor(category, index) }}
-                                ></div>
-                                <span className="text-xs text-green-700 truncate" title={category}>
-                                  {category}
-                                </span>
-                              </div>
-                            ))}
+                          <div className="text-right">
+                            <p className="font-bold text-green-800">{item.quantity.toLocaleString('id-ID')} {item.unit}</p>
                           </div>
                         </div>
-                      )}
-                    </div>  
-                  </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </Card>
