@@ -256,11 +256,11 @@ export default function ProductionRecap({
             <Package className="w-6 h-6" />
             Produksi FG
           </h1>
-          <p className="text-sm text-gray-600 mt-1">
+          {/* <p className="text-sm text-gray-600 mt-1">
             {viewMode === 'mtd' 
               ? 'Month-to-Date (MTD)' 
               : selectedMonth ? formatMonthName(selectedMonth + '-01') : 'Pilih Bulan'}
-          </p>
+          </p> */}
         </div>
 
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
@@ -315,7 +315,7 @@ export default function ProductionRecap({
             <div key={locationStats.locationId} className="space-y-3">
               {/* Location Header */}
               <div className="flex items-center gap-2 border-b border-gray-300 pb-2">
-                <Package className="w-5 h-5 text-green-700" />
+                <Factory className="w-5 h-5 text-green-700" />
                 <h4 className="text-lg font-bold text-green-800">{locationStats.location}</h4>
               </div>
 

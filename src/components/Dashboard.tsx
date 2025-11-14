@@ -1245,7 +1245,7 @@ export default function Dashboard() {
                 Level Stok FG
               </TabsTrigger>
               <TabsTrigger value="production" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
-                Rekap Produksi
+                Produksi FG
               </TabsTrigger>
               <TabsTrigger value="sales" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
                 Data Penjualan

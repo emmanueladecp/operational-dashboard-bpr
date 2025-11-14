@@ -2,7 +2,7 @@
 
 **Project Progress Tracker**  
 PT. Belitang Panen Raya - Operational Dashboard v1.0  
-Last Updated: 2025-11-13
+Last Updated: 2025-11-14
 
 ---
 
@@ -35,6 +35,7 @@ Last Updated: 2025-11-13
 - [x] Location-based filtering with RLS
 - [x] Service worker for offline capabilities
 - [x] Documentation (AGENTS.md, technical_overview.md)
+- [x] Production Recap feature with statistics cards
 - [ ] Testing and QA
 - [ ] Production deployment
 - [ ] User training
@@ -51,6 +52,50 @@ None currently tracked
 ---
 
 ## Recent Changes
+
+### 2025-11-14 - Update Location Header Icon from Package to Factory
+**Changed By:** Droid (Factory AI)  
+**Type:** UI Enhancement  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Changed location header icon
+
+**Description:**
+Updated the location header icon in Production Recap from `Package` to `Factory` for better semantic representation.
+
+**Changes Made:**
+
+**Icon Update:**
+```typescript
+// OLD: Package icon for location header
+<Package className="w-5 h-5 text-green-700" />
+
+// NEW: Factory icon for location header
+<Factory className="w-5 h-5 text-green-700" />
+```
+
+**Rationale:**
+- **Semantic Clarity:** Factory icon better represents a production location/facility
+- **Visual Hierarchy:** Distinguishes location headers from product cards (which use different icons)
+- **Consistency:** Factory icon aligns with production-focused content
+- **Icon Usage:** Package icon is still used in the main page header
+
+**Icon Summary:**
+| Location | Icon | Purpose |
+|----------|------|---------|
+| Main Page Header | Package | Represents finished goods/products |
+| Location Headers | Factory | Represents production facility/location |
+| Statistics Cards | Various | Represent specific metrics (Factory, GitBranch, Container, Layers, etc.) |
+
+**Visual Impact:**
+- Location headers now display Factory icon instead of Package icon
+- Icon size and color remain unchanged (w-5 h-5 text-green-700)
+- Better visual distinction between page-level and location-level elements
+
+**Testing:** Changes ready for build verification
+
+**Commit Message:** "style: update location header icon from Package to Factory for better semantic representation"
+
+---
 
 ### 2025-11-14 - Update Page Title from Hasil Produksi to Produksi FG
 **Changed By:** Droid (Factory AI)  
