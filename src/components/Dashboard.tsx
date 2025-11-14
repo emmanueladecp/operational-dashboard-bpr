@@ -1406,98 +1406,35 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Stock List */}
-                  <div className="space-y-3">
-                    {isLoadingStock ? (
-                      <div className="text-center py-8 text-green-600">Memuat data stok...</div>
-                    ) : processedStockDataFG.length === 0 ? (
-                      <div className="text-center py-8 text-green-600">Tidak ada data stok finished goods untuk lokasi Anda</div>
-                    ) : (
-                      processedStockDataFG.map((item, index) => (
-                        <div
-                          key={index}
-                          className="p-4 bg-blue-50 rounded-lg border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
-                          onClick={() => handleStockItemClick(item, "FINISHED GOODS")}
-                        >
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-                            <div className="flex-1">
-                              <h4 className="font-medium text-blue-800">{item.category}</h4>
-                              <div className="flex flex-wrap gap-2 mt-1">
-                                <Badge variant="outline" className="text-xs border-blue-300 text-blue-700">
-                                  {item.location}
-                                </Badge>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-bold text-blue-800">{item.quantity.toLocaleString('id-ID')} {item.unit}</p>
+                {/* Stock List */}
+                <div className="space-y-3">
+                  {isLoadingStock ? (
+                    <div className="text-center py-8 text-green-600">Memuat data stok...</div>
+                  ) : processedStockDataFG.length === 0 ? (
+                    <div className="text-center py-8 text-green-600">Tidak ada data stok finished goods untuk lokasi Anda</div>
+                  ) : (
+                    processedStockDataFG.map((item, index) => (
+                      <div
+                        key={index}
+                        className="p-4 bg-blue-50 rounded-lg border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
+                        onClick={() => handleStockItemClick(item, "FINISHED GOODS")}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-blue-800">{item.category}</h4>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs border-blue-300 text-blue-700">
+                                {item.location}
+                              </Badge>
                             </div>
                           </div>
+                          <div className="text-right">
+                            <p className="font-bold text-blue-800">{item.quantity.toLocaleString('id-ID')} {item.unit}</p>
+                          </div>
                         </div>
-                      ))
-                    )}
-                  </div>
-
-                  {/* Stock Chart */}
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={processedStockDataFG}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#dbeafe" />
-                          <XAxis
-                            dataKey="location"
-                            tick={{ fontSize: 12 }}
-                            stroke="#1e40af"
-                          />
-                          <YAxis tick={{ fontSize: 12 }} stroke="#1e40af" />
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: '#eff6ff',
-                              border: '1px solid #bfdbfe',
-                              borderRadius: '8px'
-                            }}
-                            labelFormatter={(label) => `Location: ${label}`}
-                            formatter={(value, name, props) => [
-                              `${Number(value).toLocaleString('id-ID')} ${props.payload?.unit || 'Kilogram'}`,
-                              `Category: ${props.payload?.category || 'N/A'}`
-                            ]}
-                          />
-                          <Bar dataKey="quantity" radius={[4, 4, 0, 0]}>
-                            {processedStockDataFG.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={getCategoryColor(entry.category, index)} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-
-                      </ResponsiveContainer>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <div>
-                          {/* Legend */}
-                        {(() => {
-                          const uniqueCategoriesFG = new Set(processedStockDataFG.map(item => item.category));
-                          const uniqueCategoriesArray = Array.from(uniqueCategoriesFG).sort();
-
-                          return uniqueCategoriesArray.length > 0 && (
-                            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                              <h5 className="text-sm font-medium text-blue-800 mb-3">Kategori:</h5>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-                                {uniqueCategoriesArray.map((category, index) => (
-                                  <div key={category} className="flex items-center space-x-2">
-                                    <div
-                                      className="w-4 h-4 rounded-sm border border-gray-300"
-                                      style={{ backgroundColor: getCategoryColor(category, index) }}
-                                    ></div>
-                                    <span className="text-xs text-blue-700 truncate" title={category}>
-                                      {category}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })()}
-                        </div>
-                      </ResponsiveContainer>
-                    </div>
+                      </div>
+                    ))
+                  )}
                 </div>
                 
               </div>

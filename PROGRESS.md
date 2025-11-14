@@ -53,6 +53,66 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-14 - Remove Chart and Legend from Level Stok FG
+**Changed By:** Droid (Factory AI)  
+**Type:** UI Simplification  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Removed chart and legend from Level Stok FG tab
+
+**Description:**
+Removed the bar chart and category legend from Level Stok FG (Finished Goods Stock) tab to simplify the UI and maintain consistency with Level Stok BB.
+
+**Changes Made:**
+
+**Removed Components:**
+1. ❌ BarChart component with FG stock data visualization
+2. ❌ ResponsiveContainer wrapper (both chart and legend containers)
+3. ❌ CartesianGrid, XAxis, YAxis, Tooltip
+4. ❌ Legend section with unique categories
+5. ❌ Two-column grid layout (lg:grid-cols-2)
+
+**Kept Components:**
+1. ✅ Header with title "Level Stok Barang Jadi (FG)"
+2. ✅ Location filter checkboxes
+3. ✅ Stock list with clickable cards (blue theme)
+4. ✅ Loading and empty states
+5. ✅ Stock detail dialog functionality
+
+**Before:**
+```
+Layout: Grid 2 columns (lg:grid-cols-2)
+├── Left: Stock List (cards)
+└── Right: Bar Chart + Legend
+```
+
+**After:**
+```
+Layout: Full width single column
+└── Stock List (cards only)
+```
+
+**Benefits:**
+- **Consistent UI:** Both Level Stok BB and FG now have same layout
+- **Simpler Interface:** Removes visual clutter
+- **Better Focus:** Users concentrate on stock list data
+- **Improved Performance:** No chart rendering overhead
+- **More Space:** Stock cards utilize full width
+- **Clean Design:** Minimalist list-based approach
+
+**Visual Impact:**
+- FG stock cards now take full width instead of half
+- No bar chart visualization
+- No color-coded category legend
+- Consistent with Level Stok BB design
+
+**Bundle Size:** Expected reduction in Dashboard.js bundle size
+
+**Testing:** Ready for build verification
+
+**Commit Message:** "refactor: remove chart and legend from Level Stok FG for UI consistency"
+
+---
+
 ### 2025-11-14 - Remove Chart and Legend from Level Stok BB
 **Changed By:** Droid (Factory AI)  
 **Type:** UI Simplification  
