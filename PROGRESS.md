@@ -52,6 +52,282 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-14 - Update Page Title from Hasil Produksi to Produksi FG
+**Changed By:** Droid (Factory AI)  
+**Type:** UI Update  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Changed page title caption
+
+**Description:**
+Updated the main page title/caption from "Hasil Produksi" to "Produksi FG" for clearer identification of the page content.
+
+**Changes Made:**
+
+**Title Update:**
+```typescript
+// OLD:
+<h1 className="text-xl sm:text-2xl font-bold text-green-800 flex items-center gap-2">
+  <Package className="w-6 h-6" />
+  Hasil Produksi
+</h1>
+
+// NEW:
+<h1 className="text-xl sm:text-2xl font-bold text-green-800 flex items-center gap-2">
+  <Package className="w-6 h-6" />
+  Produksi FG
+</h1>
+```
+
+**Rationale:**
+- **Clarity:** "Produksi FG" (Finished Goods Production) is more specific than generic "Hasil Produksi" (Production Results)
+- **Consistency:** Matches the naming convention used in statistics cards (FG = Finished Goods)
+- **Brevity:** Shorter title, easier to read at a glance
+- **Semantic:** Directly identifies the main focus as Finished Goods production
+
+**Impact:**
+- Main page header now displays "Produksi FG"
+- Subtitle and MTD/Periodic toggle remain unchanged
+- Icon (Package) remains unchanged
+- No functional changes, UI text only
+
+**Visual Changes:**
+- **Before:** "Hasil Produksi" (Production Results)
+- **After:** "Produksi FG" (Finished Goods Production)
+
+**Testing:** Build successful (10.35s), no TypeScript errors, all assets generated correctly
+
+**Commit Message:** "refactor: update page title from Hasil Produksi to Produksi FG"
+
+---
+
+### 2025-11-14 - Update Icons for Rendemen Turunan Cards
+**Changed By:** Droid (Factory AI)  
+**Type:** UI Enhancement  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Replaced SVG icons with lucide-react icons
+
+**Description:**
+Updated the icons for Rendemen Turunan Beras and Rendemen Turunan Lain cards from generic SVG chart icons to more semantic lucide-react icons.
+
+**Changes Made:**
+
+**1. Import Update:**
+```typescript
+// Added Percent and Gauge icons
+import { Calendar, GitBranch, Container, Package, Factory, Layers, Percent, Gauge } from 'lucide-react';
+```
+
+**2. Icon Replacements:**
+
+**Rendemen Turunan Beras:**
+```typescript
+// OLD: Generic trending up SVG
+<svg className="w-8 h-8 text-sky-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+</svg>
+
+// NEW: Percent icon from lucide-react
+<Percent className="w-8 h-8 text-sky-700" />
+```
+
+**Rendemen Turunan Lain:**
+```typescript
+// OLD: Generic trending up SVG
+<svg className="w-8 h-8 text-cyan-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+</svg>
+
+// NEW: Gauge icon from lucide-react
+<Gauge className="w-8 h-8 text-cyan-700" />
+```
+
+**Icon Choices:**
+
+**Percent Icon (Rendemen Turunan Beras):**
+- **Meaning:** Directly represents percentage/yield metric
+- **Visual:** Classic % symbol
+- **Relevance:** Perfect for rendemen (yield percentage) calculation
+- **Color:** Sky blue to match card theme
+
+**Gauge Icon (Rendemen Turunan Lain):**
+- **Meaning:** Represents measurement/metrics/performance
+- **Visual:** Speedometer/gauge dial
+- **Relevance:** Shows measurement and efficiency monitoring
+- **Color:** Cyan to match card theme
+
+**Benefits:**
+- ✅ More semantic icons that clearly represent percentage/measurement
+- ✅ Distinct icons for each rendemen card (easy visual differentiation)
+- ✅ Consistent with other lucide-react icons in the app
+- ✅ Cleaner code (no inline SVG paths)
+- ✅ Better maintainability with icon library
+
+**Icon Summary:**
+| Card | Icon | Meaning | Color |
+|------|------|---------|-------|
+| Rendemen FG | Bar Chart SVG | Statistical metric | Purple |
+| Rendemen Turunan Beras | Percent | Percentage/yield | Sky Blue |
+| Rendemen Turunan Lain | Gauge | Measurement/metrics | Cyan |
+
+**Testing:** Build successful (8.27s), no TypeScript errors, Dashboard.js size: 69.56 kB
+
+**Commit Message:** "style: update Rendemen Turunan cards icons to Percent and Gauge"
+
+---
+
+### 2025-11-14 - Add Rendemen Turunan Beras and Rendemen Turunan Lain Cards
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Addition  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Added two new rendemen calculation cards
+
+**Description:**
+Added two new information cards to display Rendemen (yield percentage) for Turunan Beras and Turunan Lain products. These cards show efficiency metrics calculated by dividing each product type by Pemakaian Bahan Baku.
+
+**Changes Made:**
+
+**1. Calculation Logic:**
+```typescript
+// Rendemen Turunan Beras = (Turunan Beras / Pemakaian Bahan Baku) × 100%
+const rendemenTurunanBeras = bahanBakuTon > 0 
+  ? (turunanTon / bahanBakuTon) * 100 
+  : 0;
+
+// Rendemen Turunan Lain = (Turunan Lain / Pemakaian Bahan Baku) × 100%
+const rendemenTurunanLain = bahanBakuTon > 0 
+  ? (turunanLainTon / bahanBakuTon) * 100 
+  : 0;
+```
+
+**2. Statistics Object Update:**
+```typescript
+return {
+  location,
+  locationId: data[0]?.m_location_id,
+  endProductQty: endProductTon,
+  turunanQty: turunanTon,
+  bahanBakuQty: bahanBakuTon,
+  turunanLainQty: turunanLainTon,
+  rendemenPercentage: rendemenPercentage,
+  rendemenTurunanBeras: rendemenTurunanBeras, // NEW
+  rendemenTurunanLain: rendemenTurunanLain    // NEW
+};
+```
+
+**3. New Cards Added:**
+
+**Rendemen Turunan Beras Card:**
+```typescript
+<Card className="p-4 bg-gradient-to-br from-sky-50 to-sky-100 border-sky-200">
+  <div className="flex items-center justify-between">
+    <div className="flex-1">
+      <p className="text-sm text-sky-700 font-medium mb-1">Rendemen Turunan Beras</p>
+      <p className="text-xs text-sky-600 mb-2">Turunan Beras / Pemakaian Bahan Baku × 100%</p>
+      <div className="flex items-baseline gap-2">
+        <p className="text-3xl sm:text-4xl font-bold text-sky-900">
+          {Math.round(locationStats.rendemenTurunanBeras)}
+        </p>
+        <span className="text-xl sm:text-2xl font-semibold text-sky-700">%</span>
+      </div>
+    </div>
+    <div className="text-right">
+      <div className="bg-sky-200 rounded-full p-3">
+        <svg className="w-8 h-8 text-sky-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+      </div>
+    </div>
+  </div>
+</Card>
+```
+
+**Rendemen Turunan Lain Card:**
+```typescript
+<Card className="p-4 bg-gradient-to-br from-cyan-50 to-cyan-100 border-cyan-200">
+  <div className="flex items-center justify-between">
+    <div className="flex-1">
+      <p className="text-sm text-cyan-700 font-medium mb-1">Rendemen Turunan Lain</p>
+      <p className="text-xs text-cyan-600 mb-2">Turunan Lain / Pemakaian Bahan Baku × 100%</p>
+      <div className="flex items-baseline gap-2">
+        <p className="text-3xl sm:text-4xl font-bold text-cyan-900">
+          {Math.round(locationStats.rendemenTurunanLain)}
+        </p>
+        <span className="text-xl sm:text-2xl font-semibold text-cyan-700">%</span>
+      </div>
+    </div>
+    <div className="text-right">
+      <div className="bg-cyan-200 rounded-full p-3">
+        <svg className="w-8 h-8 text-cyan-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+      </div>
+    </div>
+  </div>
+</Card>
+```
+
+**Card Positioning:**
+- Both cards added after Rendemen FG card
+- Card order: Statistics Grid → Rendemen FG → **Rendemen Turunan Beras** → **Rendemen Turunan Lain**
+- All rendemen cards displayed below the main statistics grid
+
+**Design Choices:**
+
+**Rendemen Turunan Beras:**
+- **Color Theme:** Sky gradient (from-sky-50 to-sky-100) - light blue shade
+- **Icon:** Trending up chart SVG - represents yield/growth metric
+- **Label:** "Rendemen Turunan Beras"
+- **Formula Display:** "Turunan Beras / Pemakaian Bahan Baku × 100%"
+
+**Rendemen Turunan Lain:**
+- **Color Theme:** Cyan gradient (from-cyan-50 to-cyan-100) - vibrant cyan shade
+- **Icon:** Trending up chart SVG - represents yield/growth metric
+- **Label:** "Rendemen Turunan Lain"
+- **Formula Display:** "Turunan Lain / Pemakaian Bahan Baku × 100%"
+
+**Percentage Display:**
+- Uses `Math.round()` for standard rounding (no decimal places)
+- Large bold percentage value (3xl/4xl font)
+- "%" symbol displayed separately with slightly smaller font
+- Zero-division protection: Returns 0% if Pemakaian Bahan Baku = 0
+
+**Calculation Examples:**
+| Turunan Beras | Bahan Baku | Rendemen Turunan Beras |
+|---------------|------------|------------------------|
+| 15 TON | 100 TON | 15% |
+| 20 TON | 100 TON | 20% |
+| 12.5 TON | 100 TON | 13% (rounded) |
+
+| Turunan Lain | Bahan Baku | Rendemen Turunan Lain |
+|--------------|------------|-----------------------|
+| 5 TON | 100 TON | 5% |
+| 8 TON | 100 TON | 8% |
+| 3.7 TON | 100 TON | 4% (rounded) |
+
+**Business Impact:**
+- **Derivative Efficiency:** Shows what percentage of raw materials become derivative products
+- **Product Analysis:** Separate tracking for rice derivatives vs other derivatives
+- **Performance Metrics:** Helps identify high/low yielding locations
+- **Production Planning:** Useful for forecasting derivative product output
+- **Quality Control:** Can indicate processing efficiency issues if percentages are unusually low/high
+
+**Total Rendemen Cards:**
+1. Rendemen FG (Purple) - Finished goods yield
+2. Rendemen Turunan Beras (Sky) - Rice derivative yield
+3. Rendemen Turunan Lain (Cyan) - Other derivative yield
+
+**Layout:**
+- All three rendemen cards stack vertically after the statistics grid
+- Each card is full-width for better readability
+- Consistent design pattern across all rendemen cards
+- Clear visual hierarchy with color coding
+
+**Testing:** Build successful (8.40s), no TypeScript errors, Dashboard.js size: 69.90 kB (+2.11 kB)
+
+**Commit Message:** "feat: add Rendemen Turunan Beras and Rendemen Turunan Lain cards with standard rounding"
+
+---
+
 ### 2025-11-14 - Add Turunan Lain Card to Production Recap
 **Changed By:** Droid (Factory AI)  
 **Type:** Feature Addition  

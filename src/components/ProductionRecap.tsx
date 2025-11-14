@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Calendar, GitBranch, Container, Package, Factory, Layers } from 'lucide-react';
+import { Calendar, GitBranch, Container, Package, Factory, Layers, Percent, Gauge } from 'lucide-react';
 import { SupabaseClient } from "@supabase/supabase-js";
 
 interface ProductionRecapData {
@@ -188,6 +188,16 @@ export default function ProductionRecap({
       const rendemenPercentage = bahanBakuTon > 0 
         ? (endProductTon / bahanBakuTon) * 100 
         : 0;
+      
+      // Calculate Rendemen Turunan Beras = (Turunan Beras / Pemakaian Bahan Baku) * 100
+      const rendemenTurunanBeras = bahanBakuTon > 0 
+        ? (turunanTon / bahanBakuTon) * 100 
+        : 0;
+      
+      // Calculate Rendemen Turunan Lain = (Turunan Lain / Pemakaian Bahan Baku) * 100
+      const rendemenTurunanLain = bahanBakuTon > 0 
+        ? (turunanLainTon / bahanBakuTon) * 100 
+        : 0;
 
       return {
         location,
@@ -196,7 +206,9 @@ export default function ProductionRecap({
         turunanQty: turunanTon,
         bahanBakuQty: bahanBakuTon,
         turunanLainQty: turunanLainTon,
-        rendemenPercentage: rendemenPercentage
+        rendemenPercentage: rendemenPercentage,
+        rendemenTurunanBeras: rendemenTurunanBeras,
+        rendemenTurunanLain: rendemenTurunanLain
       };
     });
 
@@ -242,7 +254,7 @@ export default function ProductionRecap({
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-green-800 flex items-center gap-2">
             <Package className="w-6 h-6" />
-            Hasil Produksi
+            Produksi FG
           </h1>
           <p className="text-sm text-gray-600 mt-1">
             {viewMode === 'mtd' 
@@ -381,6 +393,48 @@ export default function ProductionRecap({
                       <svg className="w-8 h-8 text-purple-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                       </svg>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Rendemen Turunan Beras Information */}
+              <Card className="p-4 bg-gradient-to-br from-sky-50 to-sky-100 border-sky-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm text-sky-700 font-medium mb-1">Rendemen Turunan Beras</p>
+                    <p className="text-xs text-sky-600 mb-2">Turunan Beras / Pemakaian Bahan Baku × 100%</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-3xl sm:text-4xl font-bold text-sky-900">
+                        {Math.round(locationStats.rendemenTurunanBeras)}
+                      </p>
+                      <span className="text-xl sm:text-2xl font-semibold text-sky-700">%</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="bg-sky-200 rounded-full p-3">
+                      <Percent className="w-8 h-8 text-sky-700" />
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Rendemen Turunan Lain Information */}
+              <Card className="p-4 bg-gradient-to-br from-cyan-50 to-cyan-100 border-cyan-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm text-cyan-700 font-medium mb-1">Rendemen Turunan Lain</p>
+                    <p className="text-xs text-cyan-600 mb-2">Turunan Lain / Pemakaian Bahan Baku × 100%</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-3xl sm:text-4xl font-bold text-cyan-900">
+                        {Math.round(locationStats.rendemenTurunanLain)}
+                      </p>
+                      <span className="text-xl sm:text-2xl font-semibold text-cyan-700">%</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="bg-cyan-200 rounded-full p-3">
+                      <Gauge className="w-8 h-8 text-cyan-700" />
                     </div>
                   </div>
                 </div>
