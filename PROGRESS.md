@@ -53,6 +53,75 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-14 - Filter Location Dropdown to Show Only Locations with Data
+**Changed By:** Droid (Factory AI)  
+**Type:** Enhancement  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Filter location dropdown to show only locations with production data
+
+**Description:**
+Updated Location Filter Dropdown to display only locations that have actual production data, improving user experience by hiding empty locations.
+
+**Changes Made:**
+
+**1. Added availableLocations useMemo:**
+```typescript
+// Get available locations from data (only locations that have production data)
+const availableLocations = useMemo(() => {
+  const locations = Array.from(new Set(productionData.map(item => item.location)))
+    .sort(); // Sort alphabetically
+  return locations;
+}, [productionData]);
+```
+
+**2. Updated Location Dropdown:**
+```typescript
+// OLD: Used allLocations from props (all locations in database)
+{allLocations
+  .filter(loc => loc.is_active)
+  .sort((a, b) => a.name.localeCompare(b.name))
+  .map((location) => (
+    <SelectItem key={location.id} value={location.name}>
+      {location.name}
+    </SelectItem>
+  ))}
+
+// NEW: Use availableLocations (only locations with data)
+{availableLocations.map((location) => (
+  <SelectItem key={location} value={location}>
+    {location}
+  </SelectItem>
+))}
+```
+
+**Logic:**
+- Extracts unique location names from `productionData`
+- Automatically sorted alphabetically
+- Updates dynamically when data changes
+- "Semua Lokasi" option always available
+
+**Benefits:**
+- **Cleaner UI:** No empty/inactive locations in dropdown
+- **Data-Driven:** Only shows locations that have actual production records
+- **Better UX:** Users don't waste time selecting locations with no data
+- **Dynamic:** Automatically updates based on available data
+- **Simpler Code:** No need to filter by is_active or match with master locations
+
+**Behavior:**
+- If location has production data → shown in dropdown
+- If location has no production data → hidden from dropdown
+- "Semua Lokasi" always available regardless of data
+
+**Example:**
+- **Before:** Dropdown shows all 10 locations (even if only 5 have data)
+- **After:** Dropdown shows only 5 locations with actual production data
+
+**Testing:** Ready for build verification
+
+**Commit Message:** "refactor: filter location dropdown to show only locations with production data"
+
+---
+
 ### 2025-11-14 - Add Location Filter Dropdown to Production Recap
 **Changed By:** Droid (Factory AI)  
 **Type:** Feature Enhancement  

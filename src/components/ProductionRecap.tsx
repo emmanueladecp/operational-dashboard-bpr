@@ -94,6 +94,13 @@ export default function ProductionRecap({
     return months;
   }, [productionData]);
 
+  // Get available locations from data (only locations that have production data)
+  const availableLocations = useMemo(() => {
+    const locations = Array.from(new Set(productionData.map(item => item.location)))
+      .sort(); // Sort alphabetically
+    return locations;
+  }, [productionData]);
+
   // Set default selected month when data loads
   useEffect(() => {
     if (availableMonths.length > 0 && !selectedMonth) {
@@ -292,14 +299,11 @@ export default function ProductionRecap({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Lokasi</SelectItem>
-                {allLocations
-                  .filter(loc => loc.is_active)
-                  .sort((a, b) => a.name.localeCompare(b.name))
-                  .map((location) => (
-                    <SelectItem key={location.id} value={location.name}>
-                      {location.name}
-                    </SelectItem>
-                  ))}
+                {availableLocations.map((location) => (
+                  <SelectItem key={location} value={location}>
+                    {location}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
