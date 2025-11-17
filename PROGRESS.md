@@ -53,6 +53,85 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-17 - Create production_recap_gabah Table Migration
+**Changed By:** Droid (Factory AI)  
+**Type:** Database Schema  
+**Files Created:**
+- ✅ Created `supabase_production_recap_gabah_table.sql` - Complete table creation script with RLS policies
+
+**Description:**
+Created a new database table `production_recap_gabah` for tracking GABAH (raw rice) production recap data, with identical structure and RLS policies as the existing `production_recap` table.
+
+**Table Structure:**
+- **Table Name:** `production_recap_gabah`
+- **Columns:**
+  - `id` (BIGSERIAL PRIMARY KEY)
+  - `m_location_id` (INTEGER, FK to master_locations)
+  - `location` (TEXT, denormalized location name)
+  - `period_date` (DATE, production period)
+  - `jenisproduk` (TEXT, product type/category)
+  - `qty` (DECIMAL(10,2), production quantity, can be negative)
+  - `created_at` (TIMESTAMP WITH TIME ZONE)
+  - `updated_at` (TIMESTAMP WITH TIME ZONE)
+
+**Indexes Created:**
+1. `idx_production_recap_gabah_m_location_id` - Location ID index
+2. `idx_production_recap_gabah_location` - Location name index
+3. `idx_production_recap_gabah_period_date` - Date index
+4. `idx_production_recap_gabah_jenisproduk` - Product type index
+5. `idx_production_recap_gabah_location_date` - Composite location + date
+6. `idx_production_recap_gabah_jenisproduk_date` - Composite product + date
+
+**RLS Policies Applied:**
+1. ✅ SuperAdmin - Full access (SELECT, INSERT, UPDATE, DELETE)
+2. ✅ BOD - View all gabah production data
+3. ✅ Auditor - View all gabah production data
+4. ✅ Sales Manager - View only assigned locations
+5. ✅ Sales Supervisor - View only assigned locations
+
+**Views Created:**
+1. `production_recap_gabah_with_location` - Join with master_locations for easier querying
+2. `production_recap_gabah_monthly` - Monthly aggregation with SUM, COUNT, AVG, MIN, MAX
+
+**Triggers:**
+- ✅ `update_production_recap_gabah_updated_at` - Auto-update updated_at on record changes
+
+**To Apply This Migration:**
+```sql
+-- Run in Supabase Dashboard → SQL Editor
+-- Paste contents of supabase_production_recap_gabah_table.sql
+-- Click "Run" to execute
+```
+
+**Verification Commands:**
+```sql
+-- Check table exists
+SELECT * FROM production_recap_gabah LIMIT 10;
+
+-- Check table structure
+\d production_recap_gabah;
+
+-- Check RLS policies
+SELECT * FROM pg_policies WHERE tablename = 'production_recap_gabah';
+
+-- Test views
+SELECT * FROM production_recap_gabah_with_location LIMIT 10;
+SELECT * FROM production_recap_gabah_monthly LIMIT 10;
+```
+
+**Benefits:**
+- **Separate Tracking:** Dedicated table for GABAH production data
+- **Consistent Security:** Same RLS policies as other production tables
+- **Optimized Performance:** Proper indexes for common query patterns
+- **Easy Reporting:** Monthly aggregation view for business analytics
+- **Role-Based Access:** Proper data isolation based on user roles and locations
+
+**Next Steps:**
+1. Run the SQL migration in Supabase Dashboard
+2. Verify table creation and RLS policies
+3. Create Edge Function or API endpoint for data synchronization (if needed)
+4. Update frontend components to query new table (if needed)
+
 ### 2025-11-17 - Format Period Headers in Data Penjualan to Indonesian Month Names
 **Changed By:** Droid (Factory AI)  
 **Type:** UI Enhancement  
