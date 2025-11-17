@@ -318,7 +318,7 @@ export default function ProductionRecapGabah({
                           idx === 3 ? 'text-green-700' :
                           'text-emerald-700'
                         }`}>
-                          {product.product === 'WIP-GABAH' ? 'Total Produksi Gabah' : 
+                          {product.product === 'WIP-GABAH' ? 'Total Produksi Gabah (WIP-TP)' : 
                            product.product === 'GKG' ? 'Pemakaian GKG' : 
                            product.product}
                         </p>
@@ -330,15 +330,6 @@ export default function ProductionRecapGabah({
                           'text-emerald-900'
                         }`}>
                           {formatNumber(product.qty)} <span className="text-lg sm:text-xl">TON</span>
-                        </p>
-                        <p className={`text-xs mt-1 ${
-                          idx === 0 ? 'text-yellow-600' :
-                          idx === 1 ? 'text-orange-600' :
-                          idx === 2 ? 'text-lime-600' :
-                          idx === 3 ? 'text-green-600' :
-                          'text-emerald-600'
-                        }`}>
-                          {Math.round(product.percentage)}% dari total
                         </p>
                       </div>
                       <div className={`rounded-full p-2 ${

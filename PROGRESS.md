@@ -53,6 +53,59 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-17 - Remove Percentage Caption from Produksi Gabah Product Cards
+**Changed By:** Droid (Factory AI)  
+**Type:** UI Simplification  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecapGabah.tsx` - Removed percentage caption
+
+**Description:**
+Removed the "X% dari total" percentage caption from product breakdown cards in Produksi Gabah component to simplify the UI and reduce visual clutter.
+
+**Changes Made:**
+
+**Removed Element:**
+```typescript
+// REMOVED: Percentage caption below quantity
+<p className={`text-xs mt-1 ${
+  idx === 0 ? 'text-yellow-600' :
+  idx === 1 ? 'text-orange-600' :
+  idx === 2 ? 'text-lime-600' :
+  idx === 3 ? 'text-green-600' :
+  'text-emerald-600'
+}`}>
+  {Math.round(product.percentage)}% dari total
+</p>
+```
+
+**Before:**
+- Product cards showed: Product Name → Quantity (TON) → Percentage caption
+- Example: "15 TON" followed by "30% dari total"
+
+**After:**
+- Product cards now show: Product Name → Quantity (TON) only
+- Example: "15 TON" (cleaner, more focused)
+
+**Rationale:**
+- **Cleaner UI:** Removes unnecessary text that clutters the card
+- **Focus on Data:** Users primarily need quantity values, not percentages
+- **Visual Simplicity:** Cards are less busy and easier to scan
+- **Sufficient Context:** Product rank (1st, 2nd, 3rd) already indicates relative importance
+
+**Benefits:**
+- **Reduced Visual Clutter:** Cards look cleaner and more professional
+- **Faster Scanning:** Users can quickly read quantity values
+- **Consistent Design:** Matches simplified approach used in other dashboard sections
+- **Better Mobile Experience:** Less text means better readability on small screens
+
+**Impact:**
+- Lines removed: 9 lines in ProductionRecapGabah.tsx
+- Visual impact: Cleaner, simpler product cards
+- Information loss: Minimal (percentage was secondary information)
+- User experience: Improved readability and focus
+
+---
+
 ### 2025-11-17 - Exclude OTHERS from Product Breakdown Display in Produksi Gabah
 **Changed By:** Droid (Factory AI)  
 **Type:** Feature Enhancement  
