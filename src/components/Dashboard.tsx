@@ -1550,107 +1550,15 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   <>
-                    {/* Sales Period Comparison Chart - Grouped by Location */}
-                    {salesPeriodComparisonData.length > 0 ? (
-                      <div className="mb-6">
-                        <h4 className="text-md font-semibold text-green-800 mb-4">
-                          Komparasi Penjualan per Lokasi & Periode 
-                          <span className="text-xs text-gray-500 ml-2">({salesPeriodComparisonData.length} data)</span>
-                        </h4>
-                        <div className="w-full bg-white p-2 sm:p-4 rounded-lg border border-green-100" style={{ height: '400px', minHeight: '300px' }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={salesPeriodComparisonData}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#dcfce7" />
-                              <XAxis 
-                                dataKey="locationPeriod" 
-                                tick={{ fontSize: 9, angle: -45, textAnchor: 'end' }}
-                                height={80}
-                                stroke="#166534"
-                                interval={0}
-                                scale="band"
-                              />
-                              <YAxis 
-                                tick={{ fontSize: 12 }} 
-                                stroke="#166534"
-                                label={{ 
-                                  value: 'Total Penjualan (Ton)', 
-                                  angle: -90, 
-                                  position: 'insideLeft', 
-                                  style: { fontSize: 12, textAnchor: 'middle' } 
-                                }}
-                              />
-                              <Tooltip 
-                                contentStyle={{ 
-                                  backgroundColor: '#f0fdf4', 
-                                  border: '1px solid #bbf7d0',
-                                  borderRadius: '8px'
-                                }}
-                                formatter={(value: number) => {
-                                  const item = salesPeriodComparisonData.find(d => d.total === value);
-                                  return `${value.toLocaleString('id-ID', { maximumFractionDigits: 2 })} Ton (${item?.totalKg.toLocaleString('id-ID')} kg)`;
-                                }}
-                                labelFormatter={(label: string) => {
-                                  const item = salesPeriodComparisonData.find(d => d.locationPeriod === label);
-                                  return item ? `${item.location} - ${item.period}` : label;
-                                }}
-                              />
-                              <Bar 
-                                dataKey="total" 
-                                fill="#16a34a"
-                                radius={[4, 4, 0, 0]}
-                                name="Total Penjualan"
-                                isAnimationActive={false}
-                                activeBar={false}
-                              >
-                                {salesPeriodComparisonData.map((entry, index) => (
-                                  <Cell 
-                                    key={`cell-${index}`} 
-                                    fill={getCategoryColor(entry.location, index)}
-                                  />
-                                ))}
-                              </Bar>
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                        
-                        {/* Summary and Legend */}
-                        <div className="mt-3 space-y-2">
-                          <div className="p-3 bg-green-50 rounded-lg text-center">
-                            <p className="text-sm text-green-700">
-                              <strong>Total Keseluruhan:</strong> {(totalSalesFromSummary / 1000).toLocaleString('id-ID', { maximumFractionDigits: 2 })} Ton
-                              <span className="text-xs ml-2">({selectedPeriodRange} bulan terakhir)</span>
-                            </p>
-                          </div>
-                          
-                          {/* Location Legend */}
-                          {(() => {
-                            const uniqueLocations = Array.from(new Set(salesPeriodComparisonData.map(d => d.location))).sort();
-                            return uniqueLocations.length > 1 && (
-                              <div className="p-3 bg-gray-50 rounded-lg">
-                                <p className="text-xs font-medium text-gray-700 mb-2">Legenda Lokasi:</p>
-                                <div className="flex flex-wrap gap-3">
-                                  {uniqueLocations.map((location, idx) => (
-                                    <div key={location} className="flex items-center space-x-2">
-                                      <div
-                                        className="w-4 h-4 rounded"
-                                        style={{ backgroundColor: getCategoryColor(location, idx) }}
-                                      ></div>
-                                      <span className="text-xs text-gray-700">{location}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
-                        <p className="text-sm text-yellow-700">
-                          📊 Grafik komparasi akan muncul jika ada data penjualan dari periode yang dipilih
+                    {/* Summary */}
+                    <div className="mb-6">
+                      <div className="p-3 bg-green-50 rounded-lg text-center">
+                        <p className="text-sm text-green-700">
+                          <strong>Total Keseluruhan:</strong> {(totalSalesFromSummary / 1000).toLocaleString('id-ID', { maximumFractionDigits: 2 })} Ton
+                          <span className="text-xs ml-2">({selectedPeriodRange} bulan terakhir)</span>
                         </p>
                       </div>
-                    )}
+                    </div>
 
                     {/* Sales Data Table */}
                     <div className="mb-6 overflow-x-auto">
