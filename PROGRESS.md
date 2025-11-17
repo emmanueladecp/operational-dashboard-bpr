@@ -53,6 +53,49 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-17 - Format Period Headers in Data Penjualan to Indonesian Month Names
+**Changed By:** Droid (Factory AI)  
+**Type:** UI Enhancement  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Added month formatting function and updated table headers
+
+**Description:**
+Enhanced the Data Penjualan table by formatting period column headers from technical format (YYYY-MM) to user-friendly Indonesian month names and year format.
+
+**Changes Made:**
+
+**Added Function:**
+- ✅ `formatMonthYear(period: string)` helper function
+  - Converts period format from "2025-11" to "November 2025"
+  - Uses Indonesian month names (Januari, Februari, Maret, etc.)
+  - Placed after `getPeriodRange` helper function
+
+**Updated Component:**
+- ✅ Sales Data Table header columns
+  - Changed from: `{period}` (displays "2025-11")
+  - Changed to: `{formatMonthYear(period)}` (displays "November 2025")
+
+**Before:**
+```
+Table Header: Lokasi | Kategori Produk | 2025-11 | 2025-10 | 2025-09 | Total
+```
+
+**After:**
+```
+Table Header: Lokasi | Kategori Produk | November 2025 | Oktober 2025 | September 2025 | Total
+```
+
+**Benefits:**
+- **User-Friendly:** More readable and intuitive date format
+- **Localized:** Uses Indonesian month names matching app language
+- **Professional:** Cleaner presentation for business users
+- **Consistent:** Matches date formatting in other parts of the app
+
+**Impact:**
+- Lines added: 11 lines (new helper function)
+- Lines modified: 1 line (table header)
+- User experience: Significantly improved readability
+
 ### 2025-11-17 - Remove Chart and Legend from Data Penjualan
 **Changed By:** Droid (Factory AI)  
 **Type:** UI Simplification  

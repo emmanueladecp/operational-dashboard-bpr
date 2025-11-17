@@ -402,6 +402,17 @@ export default function Dashboard() {
     return getLastNMonthsPeriods(n);
   };
 
+  // Helper function to format period (YYYY-MM) to Indonesian month name and year
+  const formatMonthYear = (period: string): string => {
+    const monthNames = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    const [year, month] = period.split('-');
+    const monthIndex = parseInt(month) - 1;
+    return `${monthNames[monthIndex]} ${year}`;
+  };
+
   // Initialize default period filter (last 3 months)
   useEffect(() => {
     if (salesPeriodFilter.length === 0) {
@@ -1568,7 +1579,7 @@ export default function Dashboard() {
                             <TableHead className="font-semibold">Lokasi</TableHead>
                             <TableHead className="font-semibold">Kategori Produk</TableHead>
                             {salesPeriodFilter.map(period => (
-                              <TableHead key={period} className="font-semibold text-right">{period}</TableHead>
+                              <TableHead key={period} className="font-semibold text-right">{formatMonthYear(period)}</TableHead>
                             ))}
                             <TableHead className="font-semibold text-right">Total</TableHead>
                           </TableRow>
