@@ -206,7 +206,7 @@ export default function ProductionRecapGabah({
           <Button
             variant={viewMode === 'mtd' ? 'default' : 'outline'}
             onClick={() => setViewMode('mtd')}
-            className="flex-1 sm:flex-initial bg-amber-600 hover:bg-amber-700"
+            className="flex-1 sm:flex-initial"
           >
             <Calendar className="w-4 h-4 mr-2" />
             MTD
@@ -214,7 +214,7 @@ export default function ProductionRecapGabah({
           <Button
             variant={viewMode === 'periodic' ? 'default' : 'outline'}
             onClick={() => setViewMode('periodic')}
-            className="flex-1 sm:flex-initial bg-amber-600 hover:bg-amber-700"
+            className="flex-1 sm:flex-initial"
           >
             <Calendar className="w-4 h-4 mr-2" />
             Periodik
@@ -223,7 +223,7 @@ export default function ProductionRecapGabah({
       </div>
 
       {/* Filters */}
-      <Card className="p-4 border-amber-200">
+      <Card className="p-4">
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Location Filter */}
           <div className="flex-1">
@@ -231,7 +231,7 @@ export default function ProductionRecapGabah({
               Pilih Lokasi
             </label>
             <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-              <SelectTrigger className="border-amber-200">
+              <SelectTrigger>
                 <SelectValue placeholder="Semua Lokasi" />
               </SelectTrigger>
               <SelectContent>
@@ -252,7 +252,7 @@ export default function ProductionRecapGabah({
                 Pilih Bulan
               </label>
               <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger className="border-amber-200">
+                <SelectTrigger>
                   <SelectValue placeholder="Pilih bulan..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -361,9 +361,9 @@ export default function ProductionRecapGabah({
 
       {/* Loading State */}
       {isLoadingProduction && (
-        <Card className="p-8 border-amber-200">
+        <Card className="p-8">
           <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
             <span className="ml-3 text-gray-600">Memuat data produksi gabah...</span>
           </div>
         </Card>
@@ -388,9 +388,9 @@ export default function ProductionRecapGabah({
 
       {/* No Data State */}
       {!isLoadingProduction && !error && allFilteredData.length === 0 && (
-        <Card className="p-12 border-amber-200">
+        <Card className="p-12">
           <div className="text-center text-gray-500">
-            <Wheat className="w-16 h-16 mx-auto mb-4 opacity-50 text-amber-400" />
+            <Wheat className="w-16 h-16 mx-auto mb-4 opacity-50" />
             <p className="text-lg font-medium">Tidak ada data produksi gabah</p>
             <p className="text-sm mt-2">
               {viewMode === 'mtd' 

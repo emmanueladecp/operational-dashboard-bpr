@@ -53,6 +53,74 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-17 - Fix Styling Consistency in Produksi Gabah Component
+**Changed By:** Droid (Factory AI)  
+**Type:** Bug Fix / Style Consistency  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecapGabah.tsx` - Fixed styling to match ProductionRecap
+
+**Description:**
+Fixed styling inconsistencies between ProductionRecapGabah and ProductionRecap (FG) components to ensure consistent user experience across both tabs.
+
+**Issues Fixed:**
+
+**1. Button Styling:**
+- ❌ **Before:** Buttons had `bg-amber-600 hover:bg-amber-700` classes that overrode variant behavior
+- ✅ **After:** Removed custom bg classes, now uses standard variant system (default/outline)
+
+**2. Card Borders:**
+- ❌ **Before:** Filter Card had `border-amber-200` class
+- ✅ **After:** Uses default Card border styling
+
+**3. SelectTrigger Borders:**
+- ❌ **Before:** Both SelectTrigger elements had `border-amber-200` class
+- ✅ **After:** Uses default SelectTrigger border styling
+
+**4. Loading State:**
+- ❌ **Before:** Loading Card had `border-amber-200` and spinner had `border-amber-600`
+- ✅ **After:** Uses default Card border and `border-green-600` spinner (consistent with FG)
+
+**5. Empty State:**
+- ❌ **Before:** Empty Card had `border-amber-200` and Wheat icon had `text-amber-400`
+- ✅ **After:** Uses default Card border and default icon color
+
+**Changes Summary:**
+```diff
+- className="flex-1 sm:flex-initial bg-amber-600 hover:bg-amber-700"
++ className="flex-1 sm:flex-initial"
+
+- <Card className="p-4 border-amber-200">
++ <Card className="p-4">
+
+- <SelectTrigger className="border-amber-200">
++ <SelectTrigger>
+
+- border-b-2 border-amber-600
++ border-b-2 border-green-600
+
+- <Wheat className="w-16 h-16 mx-auto mb-4 opacity-50 text-amber-400" />
++ <Wheat className="w-16 h-16 mx-auto mb-4 opacity-50" />
+```
+
+**Intentional Theme Differences (Preserved):**
+These differences are kept to visually distinguish Gabah from FG:
+- ✅ **Header Color:** Amber-800 text (vs Green-800 for FG)
+- ✅ **Header Icon:** Wheat (vs Package for FG)
+- ✅ **Tab Active Color:** bg-amber-600 in Dashboard tab (vs bg-green-600 for FG)
+- ✅ **Statistics Cards:** Amber/Yellow color schemes (vs Green/Blue for FG)
+
+**Benefits:**
+- **Consistent UX:** Both tabs now use same styling patterns
+- **Predictable Behavior:** Buttons and forms behave identically
+- **Proper Variant System:** Respects Shadcn/UI component variants
+- **Visual Distinction:** Theme colors still differentiate content types
+- **Maintainable:** Follows established component patterns
+
+**Impact:**
+- Lines modified: 7 changes across component
+- Visual consistency: Significantly improved
+- User experience: More predictable and professional
+
 ### 2025-11-17 - Add Produksi Gabah Tab and Component
 **Changed By:** Droid (Factory AI)  
 **Type:** Feature Addition  
