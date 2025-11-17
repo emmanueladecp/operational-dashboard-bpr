@@ -1259,7 +1259,7 @@ export default function Dashboard() {
               <TabsTrigger value="production" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
                 Produksi FG
               </TabsTrigger>
-              <TabsTrigger value="production-gabah" className="data-[state=active]:bg-amber-600 data-[state=active]:text-white px-3 py-2">
+              <TabsTrigger value="production-gabah" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
                 Produksi Gabah
               </TabsTrigger>
               <TabsTrigger value="sales" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
