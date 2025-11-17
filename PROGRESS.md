@@ -53,6 +53,54 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-17 - Change Produksi Gabah Tab Active Color to Green
+**Changed By:** User Manual Edit  
+**Type:** Style Update  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Changed tab active color
+
+**Description:**
+Changed the Produksi Gabah tab active background color from amber to green to maintain consistent tab appearance across all dashboard tabs.
+
+**Change Made:**
+```diff
+- <TabsTrigger value="production-gabah" className="data-[state=active]:bg-amber-600 ...">
++ <TabsTrigger value="production-gabah" className="data-[state=active]:bg-green-600 ...">
+```
+
+**Before:**
+- Produksi Gabah tab used `bg-amber-600` when active (different from other tabs)
+
+**After:**
+- Produksi Gabah tab now uses `bg-green-600` when active (same as all other tabs)
+
+**Tab Active Colors (All Uniform Now):**
+- ✅ Level Stok BB - `bg-green-600`
+- ✅ Level Stok FG - `bg-green-600`
+- ✅ Produksi FG - `bg-green-600`
+- ✅ Produksi Gabah - `bg-green-600` ← Changed from amber
+- ✅ Data Penjualan - `bg-green-600`
+- ✅ Data Pembelian - `bg-green-600`
+- ✅ Management User - `bg-green-600`
+- ✅ Management Lokasi - `bg-green-600`
+
+**Visual Distinction Preserved:**
+While tab colors are now uniform, Produksi Gabah content still maintains its identity through:
+- Header text color: `text-amber-800`
+- Header icon: Wheat 🌾
+- Statistics cards: Amber/Yellow color schemes
+
+**Benefits:**
+- **Uniform Tab Bar:** All tabs have consistent active state appearance
+- **Simpler Visual Design:** No color variation in tab selection
+- **Professional Look:** Clean and cohesive navigation
+- **Maintained Content Identity:** Gabah content still visually distinct inside the tab
+
+**Impact:**
+- Lines modified: 1 line in Dashboard.tsx
+- Visual consistency: Significantly improved
+- User experience: More predictable tab navigation
+
 ### 2025-11-17 - Fix Styling Consistency in Produksi Gabah Component
 **Changed By:** Droid (Factory AI)  
 **Type:** Bug Fix / Style Consistency  
