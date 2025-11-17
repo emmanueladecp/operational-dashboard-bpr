@@ -167,6 +167,14 @@ export default function ProductionRecapGabah({
         byProduct.set(item.jenisproduk, current + (item?.total_qty || 0));
       });
 
+      // Custom sort order for products
+      const productOrder: { [key: string]: number } = {
+        'WIP-GABAH': 1,
+        'TR-Beras': 2,
+        'GKG': 3,
+        'TR-Lain': 4
+      };
+
       return {
         location,
         locationId: data[0]?.m_location_id,
@@ -175,7 +183,12 @@ export default function ProductionRecapGabah({
           product,
           qty: Math.round(Math.abs(qty) / 1000), // Convert to TON and use absolute value
           percentage: totalGabahQty > 0 ? (Math.abs(qty) / Math.abs(totalGabahQty)) * 100 : 0
-        })).sort((a, b) => b.qty - a.qty) // Sort by quantity descending
+        })).sort((a, b) => {
+          // Custom sort: WIP-GABAH, TR-Beras, GKG, TR-Lain, then others
+          const orderA = productOrder[a.product] || 999;
+          const orderB = productOrder[b.product] || 999;
+          return orderA - orderB;
+        })
       };
     });
 
