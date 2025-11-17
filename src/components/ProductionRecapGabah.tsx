@@ -170,8 +170,8 @@ export default function ProductionRecapGabah({
       // Custom sort order for products
       const productOrder: { [key: string]: number } = {
         'WIP-GABAH': 1,
-        'TR-Beras': 2,
-        'GKG': 3,
+        'TR-Beras': 3,
+        'GKG': 2,
         'TR-Lain': 4
       };
 
@@ -320,6 +320,8 @@ export default function ProductionRecapGabah({
                         }`}>
                           {product.product === 'WIP-GABAH' ? 'Total Produksi Gabah (WIP-TP)' : 
                            product.product === 'GKG' ? 'Pemakaian GKG' : 
+                           product.product === 'TR-BERAS' ? 'Turunan Beras' :
+                           product.product === 'TR-LAIN' ? 'Turunan Lain' :
                            product.product}
                         </p>
                         <p className={`text-2xl sm:text-3xl font-bold mt-1 ${

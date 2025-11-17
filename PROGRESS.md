@@ -53,6 +53,79 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-17 - Update Product Captions and Sort Order in Produksi Gabah
+**Changed By:** Droid (Factory AI)  
+**Type:** UI Enhancement  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecapGabah.tsx` - Updated captions and sort order
+
+**Description:**
+Updated product name display captions for TR-BERAS and TR-LAIN to use more user-friendly Indonesian labels, and adjusted the product sort order to prioritize GKG before TR-Beras.
+
+**Changes Made:**
+
+**1. Caption Mappings Added:**
+```typescript
+// Added caption mappings for derivative products
+{product.product === 'WIP-GABAH' ? 'Total Produksi Gabah (WIP-TP)' : 
+ product.product === 'GKG' ? 'Pemakaian GKG' : 
+ product.product === 'TR-BERAS' ? 'Turunan Beras' :    // NEW
+ product.product === 'TR-LAIN' ? 'Turunan Lain' :      // NEW
+ product.product}
+```
+
+**2. Sort Order Adjusted:**
+```typescript
+// OLD sort order
+const productOrder = {
+  'WIP-GABAH': 1,
+  'TR-Beras': 2,   // Was 2nd
+  'GKG': 3,        // Was 3rd
+  'TR-Lain': 4
+};
+
+// NEW sort order
+const productOrder = {
+  'WIP-GABAH': 1,
+  'GKG': 2,        // Now 2nd (moved up)
+  'TR-Beras': 3,   // Now 3rd (moved down)
+  'TR-Lain': 4
+};
+```
+
+**Display Mappings:**
+| Database Value | Display Caption |
+|----------------|-----------------|
+| WIP-GABAH | Total Produksi Gabah (WIP-TP) |
+| GKG | Pemakaian GKG |
+| TR-BERAS | Turunan Beras ⭐ NEW |
+| TR-LAIN | Turunan Lain ⭐ NEW |
+| (others) | Display as-is |
+
+**Product Display Order:**
+1. **WIP-GABAH** - Total Produksi Gabah (WIP-TP)
+2. **GKG** - Pemakaian GKG ⬆️ (moved up from 3rd)
+3. **TR-Beras** - Turunan Beras ⬇️ (moved down from 2nd)
+4. **TR-Lain** - Turunan Lain
+
+**Rationale:**
+- **User-Friendly Labels:** "Turunan Beras" and "Turunan Lain" are clearer than technical codes
+- **Logical Flow:** GKG (raw material consumption) should appear before derivative products
+- **Consistency:** Matches naming convention used in other components
+
+**Benefits:**
+- **Better Readability:** Indonesian labels easier for business users to understand
+- **Logical Ordering:** Production flow now reads: Total → Input (GKG) → Outputs (TR-Beras, TR-Lain)
+- **Professional:** Removes technical database codes from user interface
+- **Consistent Terminology:** Aligns with business language used in reports
+
+**Impact:**
+- Lines modified: 4 lines in ProductionRecapGabah.tsx
+- Visual impact: Clearer product labels and more logical card ordering
+- User experience: Better understanding of production metrics
+
+---
+
 ### 2025-11-17 - Remove Percentage Caption from Produksi Gabah Product Cards
 **Changed By:** Droid (Factory AI)  
 **Type:** UI Simplification  
