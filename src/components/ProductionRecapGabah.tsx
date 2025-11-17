@@ -281,20 +281,6 @@ export default function ProductionRecapGabah({
 
               {/* Statistics Cards for this Location */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Total Gabah Card */}
-                <Card className="p-4 bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-amber-700 font-medium">Total Produksi Gabah</p>
-                      <p className="text-2xl sm:text-3xl font-bold text-amber-900 mt-1">
-                        {formatNumber(locationStats.totalGabahQty)} <span className="text-lg sm:text-xl">TON</span>
-                      </p>
-                      <p className="text-xs text-amber-600 mt-1">Semua Jenis</p>
-                    </div>
-                    <Wheat className="w-10 h-10 sm:w-12 sm:h-12 text-amber-600 opacity-80" />
-                  </div>
-                </Card>
-
                 {/* Product Breakdown Cards */}
                 {locationStats.productBreakdown.slice(0, 5).map((product, idx) => (
                   <Card 
@@ -315,7 +301,9 @@ export default function ProductionRecapGabah({
                           idx === 2 ? 'text-lime-700' :
                           idx === 3 ? 'text-green-700' :
                           'text-emerald-700'
-                        }`}>{product.product}</p>
+                        }`}>
+                          {product.product === 'WIP-GABAH' ? 'Total Produksi Gabah' : product.product}
+                        </p>
                         <p className={`text-2xl sm:text-3xl font-bold mt-1 ${
                           idx === 0 ? 'text-yellow-900' :
                           idx === 1 ? 'text-orange-900' :
