@@ -186,11 +186,21 @@ export default function ProductionRecapGabah({
         ? (wipGabahTon / gkgTon) * 100 
         : 0;
 
+      // Extract TR-BERAS quantity for Rendemen Turunan Beras calculation
+      const trBerasQty = byProduct.get('TR-BERAS') || 0;
+      const trBerasTon = Math.round(Math.abs(trBerasQty) / 1000); // Convert to TON
+
+      // Calculate Rendemen Turunan Beras = (TR-BERAS / GKG) * 100
+      const rendemenTurunanBeras = gkgTon > 0 
+        ? (trBerasTon / gkgTon) * 100 
+        : 0;
+
       return {
         location,
         locationId: data[0]?.m_location_id,
         totalGabahQty: totalGabahTon,
         rendemenWIP: rendemenWIP,
+        rendemenTurunanBeras: rendemenTurunanBeras,
         productBreakdown: Array.from(byProduct.entries()).map(([product, qty]) => ({
           product,
           qty: Math.round(Math.abs(qty) / 1000), // Convert to TON and use absolute value
@@ -382,6 +392,29 @@ export default function ProductionRecapGabah({
                   <div className="text-right">
                     <div className="bg-purple-200 rounded-full p-3">
                       <svg className="w-8 h-8 text-purple-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Rendemen Turunan Beras Information */}
+              <Card className="p-4 bg-gradient-to-br from-sky-50 to-sky-100 border-sky-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm text-sky-700 font-medium mb-1">Rendemen Turunan Beras</p>
+                    <p className="text-xs text-sky-600 mb-2">Turunan Beras / Pemakaian GKG × 100%</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-3xl sm:text-4xl font-bold text-sky-900">
+                        {Math.round(locationStats.rendemenTurunanBeras)}
+                      </p>
+                      <span className="text-xl sm:text-2xl font-semibold text-sky-700">%</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="bg-sky-200 rounded-full p-3">
+                      <svg className="w-8 h-8 text-sky-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                       </svg>
                     </div>

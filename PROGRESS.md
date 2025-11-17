@@ -53,6 +53,103 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-17 - Add Rendemen Turunan Beras Calculation and Display to Produksi Gabah
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Addition  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecapGabah.tsx` - Added Rendemen Turunan Beras calculation and card
+
+**Description:**
+Added Rendemen Turunan Beras (Rice Derivative yield) calculation and display card to Produksi Gabah component, showing the efficiency ratio of Turunan Beras production relative to GKG consumption.
+
+**Changes Made:**
+
+**1. Calculation Logic Added:**
+```typescript
+// Extract TR-BERAS quantity
+const trBerasQty = byProduct.get('TR-BERAS') || 0;
+const trBerasTon = Math.round(Math.abs(trBerasQty) / 1000); // Convert to TON
+
+// Calculate Rendemen Turunan Beras = (TR-BERAS / GKG) * 100
+const rendemenTurunanBeras = gkgTon > 0 
+  ? (trBerasTon / gkgTon) * 100 
+  : 0;
+```
+
+**2. Display Card Added:**
+- Sky blue-themed card positioned after Rendemen WIP card
+- Shows large percentage value with standard rounding
+- Displays formula description for clarity
+- Bar chart icon represents efficiency metric
+
+**Formula:**
+- **Rendemen Turunan Beras (%)** = (Turunan Beras / Pemakaian GKG) × 100%
+- **Example:** 
+  - Turunan Beras: 15 TON
+  - GKG: 100 TON
+  - Rendemen Turunan Beras: (15 / 100) × 100% = **15%**
+
+**Card Design:**
+- **Title:** "Rendemen Turunan Beras"
+- **Formula Description:** "Turunan Beras / Pemakaian GKG × 100%"
+- **Value Display:** Large percentage with standard rounding (no decimals)
+- **Color Theme:** Sky gradient (from-sky-50 to-sky-100)
+- **Icon:** Bar chart SVG representing efficiency/metrics
+
+**Display Per Location:**
+Each location shows its own Rendemen Turunan Beras percentage, enabling:
+- Direct efficiency comparison between locations
+- Identification of high/low performing facilities
+- Location-specific derivative yield tracking
+
+**Safety Handling:**
+- Division by zero check: If GKG = 0, Rendemen Turunan Beras = 0% (prevents NaN)
+- Absolute values used to handle negative quantities
+- Standard rounding with Math.round() for clean percentage display
+
+**Business Value:**
+- **Derivative Production Efficiency:** Shows how efficiently GKG is converted to Turunan Beras
+- **Quality Indicator:** Higher percentage = better rice derivative yield
+- **Performance Tracking:** Monitor improvements over time (MTD vs Periodic)
+- **Location Comparison:** Easy comparison of derivative efficiency across locations
+
+**Example Scenarios:**
+| Turunan Beras | GKG | Rendemen Turunan Beras | Interpretation |
+|---------------|-----|------------------------|----------------|
+| 15 TON | 100 TON | 15% | Good derivative yield |
+| 20 TON | 100 TON | 20% | Excellent derivative yield |
+| 10 TON | 100 TON | 10% | Moderate yield |
+| 0 TON | 100 TON | 0% | No derivative production |
+| 15 TON | 0 TON | 0% | No GKG consumption |
+
+**Visual Structure:**
+```
+Location Header
+├── Product Breakdown Cards (Grid)
+│   ├── Total Produksi Gabah (WIP-TP)
+│   ├── Pemakaian GKG
+│   ├── Turunan Beras
+│   └── Turunan Lain
+├── Rendemen WIP Card (Full width)
+└── Rendemen Turunan Beras Card (Full width) [NEW]
+    └── Shows rice derivative efficiency percentage
+```
+
+**Benefits:**
+- **Derivative Insights:** Clear visibility into rice derivative production efficiency
+- **Complementary Metric:** Works alongside Rendemen WIP for comprehensive analysis
+- **Data-Driven Decisions:** Helps identify opportunities for derivative yield improvement
+- **Professional Display:** Clean, easy-to-read percentage format
+- **Location-Specific Analysis:** Granular efficiency tracking per location
+
+**Impact:**
+- Lines added: 33 lines in ProductionRecapGabah.tsx
+- Calculation: +10 lines for Rendemen Turunan Beras logic
+- Display: +23 lines for Rendemen Turunan Beras card
+- User experience: Better understanding of derivative production efficiency
+
+---
+
 ### 2025-11-17 - Add Rendemen WIP Calculation and Display to Produksi Gabah
 **Changed By:** Droid (Factory AI)  
 **Type:** Feature Addition  
