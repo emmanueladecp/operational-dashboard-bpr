@@ -295,7 +295,10 @@ export default function ProductionRecapGabah({
               {/* Statistics Cards for this Location */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Product Breakdown Cards */}
-                {locationStats.productBreakdown.slice(0, 5).map((product, idx) => (
+                {locationStats.productBreakdown
+                  .filter(product => product.product !== 'OTHERS') // Exclude OTHERS
+                  .slice(0, 5)
+                  .map((product, idx) => (
                   <Card 
                     key={product.product} 
                     className={`p-4 bg-gradient-to-br ${

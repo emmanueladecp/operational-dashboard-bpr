@@ -53,6 +53,62 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-17 - Exclude OTHERS from Product Breakdown Display in Produksi Gabah
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Enhancement  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecapGabah.tsx` - Added filter to exclude OTHERS category
+
+**Description:**
+Updated the product breakdown cards in Produksi Gabah to exclude the "OTHERS" category from display, showing only the top 5 specific products (excluding OTHERS).
+
+**Changes Made:**
+
+**Filter Logic Added:**
+```typescript
+// OLD: Show top 5 products including OTHERS
+{locationStats.productBreakdown.slice(0, 5).map((product, idx) => (
+  // Product card
+))}
+
+// NEW: Exclude OTHERS, then show top 5
+{locationStats.productBreakdown
+  .filter(product => product.product !== 'OTHERS') // Exclude OTHERS
+  .slice(0, 5)
+  .map((product, idx) => (
+    // Product card
+  ))}
+```
+
+**Rationale:**
+- **Focus on Specific Products:** OTHERS is an aggregated category with no specific product identity
+- **Meaningful Display:** Users want to see actual product names, not generic aggregations
+- **Better Analytics:** Top 5 specific products provide actionable insights
+- **Cleaner UI:** Avoids showing vague "OTHERS" category in statistics cards
+
+**Behavior:**
+- **Before:** If OTHERS was in top 5 by quantity, it would be displayed
+- **After:** OTHERS is always filtered out, showing next specific product instead
+
+**Example:**
+- **Before:** Displays [OTHERS (40%), Product A (30%), Product B (20%), Product C (5%), Product D (5%)]
+- **After:** Displays [Product A (30%), Product B (20%), Product C (5%), Product D (5%), Product E (3%)]
+
+**Note:** OTHERS is still included in the "Total Produksi Gabah" aggregate calculation, just not shown in product breakdown cards.
+
+**Benefits:**
+- **Product Visibility:** Shows actual product names users care about
+- **Better Insights:** Top 5 specific products easier to analyze
+- **Consistent:** Matches user expectation for product-level reporting
+- **Professional:** No generic "OTHERS" category cluttering the display
+
+**Impact:**
+- Lines modified: 3 lines in ProductionRecapGabah.tsx
+- Visual impact: Product breakdown cards now show only specific products
+- Data integrity: Total calculations remain unchanged
+
+---
+
 ### 2025-11-17 - Change Produksi Gabah Tab Active Color to Green
 **Changed By:** User Manual Edit  
 **Type:** Style Update  
