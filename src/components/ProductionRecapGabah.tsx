@@ -173,8 +173,8 @@ export default function ProductionRecapGabah({
         totalGabahQty: totalGabahTon,
         productBreakdown: Array.from(byProduct.entries()).map(([product, qty]) => ({
           product,
-          qty: Math.round(qty / 1000), // Convert to TON
-          percentage: totalGabahQty > 0 ? (qty / totalGabahQty) * 100 : 0
+          qty: Math.round(Math.abs(qty) / 1000), // Convert to TON and use absolute value
+          percentage: totalGabahQty > 0 ? (Math.abs(qty) / Math.abs(totalGabahQty)) * 100 : 0
         })).sort((a, b) => b.qty - a.qty) // Sort by quantity descending
       };
     });
@@ -302,7 +302,9 @@ export default function ProductionRecapGabah({
                           idx === 3 ? 'text-green-700' :
                           'text-emerald-700'
                         }`}>
-                          {product.product === 'WIP-GABAH' ? 'Total Produksi Gabah' : product.product}
+                          {product.product === 'WIP-GABAH' ? 'Total Produksi Gabah' : 
+                           product.product === 'GKG' ? 'Pemakaian GKG' : 
+                           product.product}
                         </p>
                         <p className={`text-2xl sm:text-3xl font-bold mt-1 ${
                           idx === 0 ? 'text-yellow-900' :
