@@ -53,6 +53,90 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-17 - Add Produksi Gabah Tab and Component
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Addition  
+**Files Modified:**
+- ✅ Created `src/components/ProductionRecapGabah.tsx` - New component for gabah production
+- ✅ Modified `src/components/Dashboard.tsx` - Added tab and import for gabah production
+
+**Description:**
+Added a new "Produksi Gabah" tab after "Produksi FG" in the Dashboard to display raw rice (gabah) production statistics using the newly created `production_recap_gabah` table.
+
+**Changes Made:**
+
+**New Component Created:**
+- ✅ **ProductionRecapGabah.tsx** (412 lines)
+  - Fetches data from `production_recap_gabah_monthly` view
+  - Displays total gabah production per location
+  - Shows product breakdown with percentage distribution
+  - Supports MTD and Periodic view modes
+  - Location filtering with dropdown
+  - Month filtering in Periodic mode
+  - Loading, error, and empty states
+
+**Component Features:**
+1. **Header:** "Produksi Gabah" with wheat icon (amber theme)
+2. **View Modes:** MTD (current month) and Periodic (selected month)
+3. **Filters:** Location dropdown and month selector
+4. **Statistics Cards:**
+   - Total Produksi Gabah (aggregate across all product types)
+   - Product breakdown cards (top 5 products by volume)
+   - Each product card shows quantity in TON and percentage
+   - Color-coded by product rank (yellow, orange, lime, green, emerald)
+5. **Grouped by Location:** Statistics separated by location with Factory icon header
+6. **Responsive Design:** Mobile-friendly grid layout
+
+**Dashboard Integration:**
+- ✅ Import `ProductionRecapGabah` component
+- ✅ Add "Produksi Gabah" tab trigger with amber theme
+- ✅ Add `TabsContent` for "production-gabah" value
+- ✅ Pass props: supabaseClient, allLocations, locationFilter, userRole
+
+**Theme Differences from Produksi FG:**
+- **Color Scheme:** Amber/Yellow theme (vs Green for FG)
+- **Icon:** Wheat icon (vs Package for FG)
+- **Active Tab Color:** bg-amber-600 (vs bg-green-600 for FG)
+- **Border Colors:** border-amber-200 (vs border-green-200 for FG)
+
+**Tab Order:**
+```
+1. Level Stok BB
+2. Level Stok FG
+3. Produksi FG
+4. Produksi Gabah ← NEW
+5. Data Penjualan
+6. Data Pembelian
+7. Management User (restricted)
+8. Management Lokasi (restricted)
+```
+
+**Data Flow:**
+1. Component fetches from `production_recap_gabah_monthly` view
+2. Filters data by location and date (MTD or selected month)
+3. Groups data by location
+4. Calculates total gabah quantity per location
+5. Breaks down by jenisproduk with percentages
+6. Displays in statistics cards
+
+**RLS Applied:**
+- Same RLS policies as `production_recap_gabah` table
+- Users see only data from their assigned locations (except SUPERADMIN/BOD/AUDITOR)
+
+**Benefits:**
+- **Separate Tracking:** Dedicated view for gabah (raw rice) production
+- **Flexible Filtering:** By location and time period
+- **Product Insights:** Breakdown by product types with percentages
+- **Consistent UX:** Same interaction patterns as Produksi FG
+- **Performance:** Uses pre-aggregated monthly view
+- **Visual Distinction:** Amber theme differentiates from FG (green theme)
+
+**Impact:**
+- Lines added: 412 lines (new component)
+- Lines modified in Dashboard.tsx: 11 lines (import + tab setup)
+- Total files changed: 2 files
+- User experience: Clear visibility into gabah production statistics
+
 ### 2025-11-17 - Create production_recap_gabah Table Migration
 **Changed By:** Droid (Factory AI)  
 **Type:** Database Schema  

@@ -17,6 +17,7 @@ import { Package, TrendingUp, TrendingDown, MapPin, Plus, Edit, Trash2, Search, 
 import { useSession } from "@clerk/clerk-react";
 import { createClerkSupabaseClient, resetClerkSupabaseClient } from "../lib/supabase";
 import ProductionRecap from "./ProductionRecap";
+import ProductionRecapGabah from "./ProductionRecapGabah";
 
 // Cache clearing utility for logout
 const clearServiceWorkerCache = async () => {
@@ -1258,6 +1259,9 @@ export default function Dashboard() {
               <TabsTrigger value="production" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
                 Produksi FG
               </TabsTrigger>
+              <TabsTrigger value="production-gabah" className="data-[state=active]:bg-amber-600 data-[state=active]:text-white px-3 py-2">
+                Produksi Gabah
+              </TabsTrigger>
               <TabsTrigger value="sales" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
                 Data Penjualan
               </TabsTrigger>
@@ -1455,6 +1459,16 @@ export default function Dashboard() {
           {/* Production Recap Tab */}
           <TabsContent value="production" className="space-y-4">
             <ProductionRecap 
+              supabaseClient={supabaseClient}
+              allLocations={allLocations}
+              locationFilter={locationFilter}
+              userRole={userRole}
+            />
+          </TabsContent>
+
+          {/* Production Recap Gabah Tab */}
+          <TabsContent value="production-gabah" className="space-y-4">
+            <ProductionRecapGabah 
               supabaseClient={supabaseClient}
               allLocations={allLocations}
               locationFilter={locationFilter}
