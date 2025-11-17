@@ -53,6 +53,104 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-17 - Add Rendemen WIP Calculation and Display to Produksi Gabah
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Addition  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecapGabah.tsx` - Added Rendemen WIP calculation and card
+
+**Description:**
+Added Rendemen WIP (Work In Progress yield) calculation and display card to Produksi Gabah component, showing the efficiency ratio of WIP-GABAH production relative to GKG consumption.
+
+**Changes Made:**
+
+**1. Calculation Logic Added:**
+```typescript
+// Extract WIP-GABAH and GKG quantities
+const wipGabahQty = byProduct.get('WIP-GABAH') || 0;
+const gkgQty = byProduct.get('GKG') || 0;
+const wipGabahTon = Math.round(Math.abs(wipGabahQty) / 1000); // Convert to TON
+const gkgTon = Math.round(Math.abs(gkgQty) / 1000); // Convert to TON
+
+// Calculate Rendemen WIP = (WIP-GABAH / GKG) * 100
+const rendemenWIP = gkgTon > 0 
+  ? (wipGabahTon / gkgTon) * 100 
+  : 0;
+```
+
+**2. Display Card Added:**
+- Purple-themed card positioned after product breakdown grid
+- Shows large percentage value with standard rounding
+- Displays formula description for clarity
+- Bar chart icon represents efficiency metric
+
+**Formula:**
+- **Rendemen WIP (%)** = (Total Produksi Gabah (WIP-TP) / Pemakaian GKG) × 100%
+- **Example:** 
+  - WIP-GABAH: 80 TON
+  - GKG: 100 TON
+  - Rendemen WIP: (80 / 100) × 100% = **80%**
+
+**Card Design:**
+- **Title:** "Rendemen WIP"
+- **Formula Description:** "Total Produksi Gabah (WIP-TP) / Pemakaian GKG × 100%"
+- **Value Display:** Large percentage with standard rounding (no decimals)
+- **Color Theme:** Purple gradient (from-purple-50 to-purple-100)
+- **Icon:** Bar chart SVG representing efficiency/metrics
+
+**Display Per Location:**
+Each location shows its own Rendemen WIP percentage, enabling:
+- Direct efficiency comparison between locations
+- Identification of high/low performing facilities
+- Location-specific yield tracking
+
+**Safety Handling:**
+- Division by zero check: If GKG = 0, Rendemen WIP = 0% (prevents NaN)
+- Absolute values used to handle negative quantities
+- Standard rounding with Math.round() for clean percentage display
+
+**Business Value:**
+- **Production Efficiency Metric:** Shows how efficiently GKG is converted to WIP-GABAH
+- **Quality Indicator:** Higher percentage = better yield/less waste in WIP stage
+- **Performance Tracking:** Monitor improvements over time (MTD vs Periodic)
+- **Location Comparison:** Easy comparison of WIP efficiency across locations
+
+**Example Scenarios:**
+| WIP-GABAH | GKG | Rendemen WIP | Interpretation |
+|-----------|-----|--------------|----------------|
+| 80 TON | 100 TON | 80% | Good WIP yield |
+| 75 TON | 100 TON | 75% | Moderate yield |
+| 90 TON | 100 TON | 90% | Excellent yield |
+| 0 TON | 100 TON | 0% | No WIP production |
+| 50 TON | 0 TON | 0% | No GKG consumption |
+
+**Visual Structure:**
+```
+Location Header
+├── Product Breakdown Cards (Grid)
+│   ├── Total Produksi Gabah (WIP-TP)
+│   ├── Pemakaian GKG
+│   ├── Turunan Beras
+│   └── Turunan Lain
+└── Rendemen WIP Card (Full width) [NEW]
+    └── Shows efficiency percentage
+```
+
+**Benefits:**
+- **Production Insights:** Clear visibility into WIP production efficiency
+- **Data-Driven Decisions:** Helps identify process improvements needed
+- **Consistent Metrics:** Matches rendemen calculation approach in ProductionRecap (FG)
+- **Professional Display:** Clean, easy-to-read percentage format
+- **Location-Specific Analysis:** Granular efficiency tracking per location
+
+**Impact:**
+- Lines added: 35 lines in ProductionRecapGabah.tsx
+- Calculation: +12 lines for Rendemen WIP logic
+- Display: +23 lines for Rendemen WIP card
+- User experience: Better understanding of WIP production efficiency
+
+---
+
 ### 2025-11-17 - Update Product Captions and Sort Order in Produksi Gabah
 **Changed By:** Droid (Factory AI)  
 **Type:** UI Enhancement  

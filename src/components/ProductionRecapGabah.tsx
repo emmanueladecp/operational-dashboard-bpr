@@ -175,10 +175,22 @@ export default function ProductionRecapGabah({
         'TR-Lain': 4
       };
 
+      // Extract WIP-GABAH and GKG quantities for Rendemen WIP calculation
+      const wipGabahQty = byProduct.get('WIP-GABAH') || 0;
+      const gkgQty = byProduct.get('GKG') || 0;
+      const wipGabahTon = Math.round(Math.abs(wipGabahQty) / 1000); // Convert to TON
+      const gkgTon = Math.round(Math.abs(gkgQty) / 1000); // Convert to TON
+
+      // Calculate Rendemen WIP = (WIP-GABAH / GKG) * 100
+      const rendemenWIP = gkgTon > 0 
+        ? (wipGabahTon / gkgTon) * 100 
+        : 0;
+
       return {
         location,
         locationId: data[0]?.m_location_id,
         totalGabahQty: totalGabahTon,
+        rendemenWIP: rendemenWIP,
         productBreakdown: Array.from(byProduct.entries()).map(([product, qty]) => ({
           product,
           qty: Math.round(Math.abs(qty) / 1000), // Convert to TON and use absolute value
@@ -353,6 +365,29 @@ export default function ProductionRecapGabah({
                   </Card>
                 ))}
               </div>
+
+              {/* Rendemen WIP Information */}
+              <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm text-purple-700 font-medium mb-1">Rendemen WIP</p>
+                    <p className="text-xs text-purple-600 mb-2">Total Produksi Gabah (WIP-TP) / Pemakaian GKG × 100%</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-3xl sm:text-4xl font-bold text-purple-900">
+                        {Math.round(locationStats.rendemenWIP)}
+                      </p>
+                      <span className="text-xl sm:text-2xl font-semibold text-purple-700">%</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="bg-purple-200 rounded-full p-3">
+                      <svg className="w-8 h-8 text-purple-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </Card>
             </div>
           ))}
         </div>
