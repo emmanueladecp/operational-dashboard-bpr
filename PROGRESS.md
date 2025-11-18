@@ -53,6 +53,55 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-18 - Add Total Stok Broken Card to Dashboard
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Addition  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Added Total Stok Broken calculation and display card
+
+**Description:**
+Added a new "Total Stok Broken" card to the Quick Stats section of the dashboard, displaying the total quantity of BROKEN type products. The card follows the same calculation principle as Total Stok BB and is positioned between Total Stok BB and Total Stok FG cards.
+
+**Changes Made:**
+
+**1. Calculation Logic Added:**
+```typescript
+const totalStockBroken = useMemo(() =>
+  processedStockDataBroken.reduce((sum, item) => sum + item.quantity, 0),
+  [processedStockDataBroken]
+);
+```
+
+**2. Display Card Added:**
+- Amber-themed card positioned after Total Stok BB card
+- Shows total quantity in Tons (converted from kg by dividing by 1000)
+- Uses Indonesian number formatting (locale 'id-ID')
+- Package icon with amber color scheme
+
+**3. Grid Layout Updated:**
+- Changed grid from `lg:grid-cols-4` to `lg:grid-cols-5` to accommodate the new card
+- Maintains responsive design (1 column on mobile, 2 on small screens, 5 on large screens)
+
+**Card Design:**
+- **Title:** "Total Stok Broken"
+- **Value Display:** Tonnage with Indonesian number formatting
+- **Color Theme:** Amber (border-amber-200, text-amber-600, text-amber-800)
+- **Icon:** Package icon in amber color
+
+**Benefits:**
+- Provides visibility of broken rice stock levels at a glance
+- Maintains consistency with existing Total Stok BB and Total Stok FG cards
+- Enables better inventory management of broken rice products
+- Respects role-based location filtering (RLS policies)
+
+**Verification:**
+- ✅ Build succeeds without errors
+- ✅ Follows existing code patterns for stock calculations
+- ✅ Uses existing `processedStockDataBroken` data source
+- ✅ Maintains responsive grid layout
+
+---
+
 ### 2025-11-17 - Add Rendemen Turunan Beras Calculation and Display to Produksi Gabah
 **Changed By:** Droid (Factory AI)  
 **Type:** Feature Addition  

@@ -526,6 +526,58 @@ export default function Dashboard() {
       });
   }, [stockData, userRole, currentUserLocations, locationFilter]);
 
+  // Process stock data for BROKEN products
+  const processedStockDataBroken = useMemo(() => {
+    if (!stockData.length) return [];
+
+    let filteredData = stockData;
+
+    // Filter for sales roles based on their assigned locations
+    if (userRole === 'SALES_MANAGER_ROLE' || userRole === 'SALES_SUPERVISOR_ROLE') {
+      const currentUserLocationNames = getCurrentUserLocationNames();
+      filteredData = stockData.filter(item => currentUserLocationNames.includes(item.location));
+    }
+
+    // Apply location filter if not 'all' and locations are selected
+    if (!locationFilter.includes('all') && locationFilter.length > 0) {
+      filteredData = filteredData.filter(item => locationFilter.includes(item.location));
+    } else if (locationFilter.length === 0) {
+      // If no locations selected, show no data
+      filteredData = [];
+    }
+
+    // Filter to show only BROKEN products
+    filteredData = filteredData.filter(item => item.product_type === 'BROKEN');
+
+    // Aggregate data by category and location
+    const aggregatedMap = new Map();
+
+    filteredData.forEach(item => {
+      const key = `${item.product_category_name}-${item.location}`;
+      const quantity = Number(item.sumqtyonhand);
+
+      if (aggregatedMap.has(key)) {
+        aggregatedMap.get(key).quantity += quantity;
+      } else {
+        aggregatedMap.set(key, {
+          category: item.product_category_name,
+          location: item.location,
+          quantity: quantity,
+          unit: item.uom_name
+        });
+      }
+    });
+
+    // Convert map to array and sort by location then category
+    return Array.from(aggregatedMap.values())
+      .sort((a, b) => {
+        if (a.location !== b.location) {
+          return a.location.localeCompare(b.location);
+        }
+        return a.category.localeCompare(b.category);
+      });
+  }, [stockData, userRole, currentUserLocations, locationFilter]);
+
   const processedStockDataFG = useMemo(() => {
     if (!stockData.length) return [];
 
@@ -1073,7 +1125,7 @@ export default function Dashboard() {
     const filteredDetailedData = stockData.filter(stockItem =>
       stockItem.product_category_name === item.category &&
       stockItem.location === item.location &&
-      stockItem.product_type === (product_type === 'RAW MATERIAL' ? 'RAW MATERIAL' : 'FINISHED GOODS')
+      stockItem.product_type === product_type
     );
 
     //console.log('Filtered detailed stock data:', filteredDetailedData);
@@ -1106,6 +1158,11 @@ export default function Dashboard() {
   const totalStockFG = useMemo(() =>
     processedStockDataFG.reduce((sum, item) => sum + item.quantity, 0),
     [processedStockDataFG]
+  );
+
+  const totalStockBroken = useMemo(() =>
+    processedStockDataBroken.reduce((sum, item) => sum + item.quantity, 0),
+    [processedStockDataBroken]
   );
 
   // Filter and sort detailed stock items
@@ -1192,12 +1249,21 @@ export default function Dashboard() {
       {/* Main Content */}
       <main className="px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <Card className="p-4 border-green-200">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-green-600 mb-1">Total Stok BB</p>
                 <p className="text-2xl font-bold text-green-800">{ (totalStockBB/1000).toLocaleString('id-ID')} Ton</p>
+              </div>
+              <Package className="w-8 h-8 text-green-600" />
+            </div>
+          </Card>
+          <Card className="p-4 border-green-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-green-600 mb-1">Total Stok Broken</p>
+                <p className="text-2xl font-bold text-green-800">{ (totalStockBroken/1000).toLocaleString('id-ID')} Ton</p>
               </div>
               <Package className="w-8 h-8 text-green-600" />
             </div>
@@ -1335,35 +1401,81 @@ export default function Dashboard() {
                 </div>
 
                 {/* Stock List */}
-                <div className="space-y-3">
-                  {isLoadingStock ? (
-                    <div className="text-center py-8 text-green-600">Memuat data stok...</div>
-                  ) : processedStockData.length === 0 ? (
-                    <div className="text-center py-8 text-green-600">Tidak ada data stok untuk lokasi Anda</div>
-                  ) : (
-                    processedStockData.map((item, index) => (
-                      <div
-                        key={index}
-                        className="p-4 bg-green-50 rounded-lg border border-green-100 cursor-pointer hover:bg-green-100 transition-colors"
-                        onClick={() => handleStockItemClick(item, "RAW MATERIAL")}
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-green-800">{item.category}</h4>
-                            <div className="flex flex-wrap gap-2 mt-1">
-                              <Badge variant="outline" className="text-xs border-green-300 text-green-700">
-                                {item.location}
-                              </Badge>
+                {isLoadingStock ? (
+                  <div className="text-center py-8 text-green-600">Memuat data stok...</div>
+                ) : processedStockData.length === 0 && processedStockDataBroken.length === 0 ? (
+                  <div className="text-center py-8 text-green-600">Tidak ada data stok untuk lokasi Anda</div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Raw Material Section */}
+                    {processedStockData.length > 0 && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="h-1 flex-1 bg-green-200 rounded"></div>
+                          <h4 className="text-sm font-semibold text-green-800 px-3 py-1 bg-green-100 rounded-full">
+                            RAW MATERIAL
+                          </h4>
+                          <div className="h-1 flex-1 bg-green-200 rounded"></div>
+                        </div>
+                        {processedStockData.map((item, index) => (
+                          <div
+                            key={`raw-${index}`}
+                            className="p-4 bg-green-50 rounded-lg border border-green-100 cursor-pointer hover:bg-green-100 transition-colors"
+                            onClick={() => handleStockItemClick(item, "RAW MATERIAL")}
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                              <div className="flex-1">
+                                <h4 className="font-medium text-green-800">{item.category}</h4>
+                                <div className="flex flex-wrap gap-2 mt-1">
+                                  <Badge variant="outline" className="text-xs border-green-300 text-green-700">
+                                    {item.location}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-green-800">{item.quantity.toLocaleString('id-ID')} {item.unit}</p>
+                              </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-bold text-green-800">{item.quantity.toLocaleString('id-ID')} {item.unit}</p>
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                    ))
-                  )}
-                </div>
+                    )}
+
+                    {/* Broken Section */}
+                    {processedStockDataBroken.length > 0 && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="h-1 flex-1 bg-amber-200 rounded"></div>
+                          <h4 className="text-sm font-semibold text-amber-800 px-3 py-1 bg-amber-100 rounded-full">
+                            BROKEN
+                          </h4>
+                          <div className="h-1 flex-1 bg-amber-200 rounded"></div>
+                        </div>
+                        {processedStockDataBroken.map((item, index) => (
+                          <div
+                            key={`broken-${index}`}
+                            className="p-4 bg-amber-50 rounded-lg border border-amber-100 cursor-pointer hover:bg-amber-100 transition-colors"
+                            onClick={() => handleStockItemClick(item, "BROKEN")}
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                              <div className="flex-1">
+                                <h4 className="font-medium text-amber-800">{item.category}</h4>
+                                <div className="flex flex-wrap gap-2 mt-1">
+                                  <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">
+                                    {item.location}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-amber-800">{item.quantity.toLocaleString('id-ID')} {item.unit}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </Card>
           </TabsContent>
