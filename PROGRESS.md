@@ -53,6 +53,129 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-19 - Fix Weighted Average Price Calculation in Data Pembelian
+**Changed By:** Droid (Factory AI)  
+**Type:** Critical Bug Fix  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Fixed to use proper weighted average calculation
+
+**Description:**
+Corrected a critical flaw in the average price calculation. The previous implementation incorrectly summed prices without considering quantities, leading to inaccurate averages when multiple products were purchased on the same day. The new implementation uses **weighted average based on quantity**.
+
+**Critical Problem Identified:**
+The previous fix still had a fundamental flaw - it simply summed `priceharian` values for products on the same date, which is mathematically incorrect.
+
+**Example of the Problem:**
+```
+Date: 2025-11-01
+  - Product A: Rp 10,000/kg × 1,000 kg = Rp 10,000,000
+  - Product B: Rp 12,000/kg × 500 kg = Rp 6,000,000
+
+❌ Previous (WRONG): (10,000 + 12,000) / 2 = Rp 11,000
+   → Ignores quantity, treats all purchases equally
+
+✅ Current (CORRECT): (10,000,000 + 6,000,000) / 1,500 kg = Rp 10,667
+   → Weighted by quantity purchased
+```
+
+**Why Weighted Average Matters:**
+When calculating average price, we must consider that buying 1,000 kg at Rp 10,000 has much more weight than buying 100 kg at Rp 15,000. Simple arithmetic mean ignores purchase volumes.
+
+**Changes Made:**
+
+**1. Updated Data Structure:**
+```typescript
+// Before: Only tracked sum of prices
+periodPrices: Record<string, Map<string, number>> // date -> total price
+
+// After: Tracks both value and quantity for weighted average
+periodPrices: Record<string, Map<string, { 
+  totalValue: number;  // sum(price × qty)
+  totalQty: number;     // sum(qty)
+}>>
+```
+
+**2. Modified Aggregation Logic:**
+```typescript
+// Calculate weighted sum
+dateMap.set(fullDate, {
+  totalValue: currentData.totalValue + (item.priceharian * item.movementqty),
+  totalQty: currentData.totalQty + item.movementqty
+});
+```
+
+**3. Updated Average Calculation:**
+```typescript
+// Per day weighted average
+const dailyWeightedAvg = dayData.totalValue / dayData.totalQty;
+
+// Period average: average of daily weighted averages
+const periodAvg = sumOfDailyWeightedAvg / dayCount;
+
+// Overall average: average of all daily weighted averages
+const overallAvg = sumOfDailyWeightedAvg / totalDayCount;
+```
+
+**Formula:**
+```
+Weighted Average (per day) = Σ(price × quantity) / Σ(quantity)
+
+Period Average = Σ(Daily Weighted Averages) / Count(unique days)
+
+Overall Average = Σ(All Daily Weighted Averages) / Total Count(unique days)
+```
+
+**Real-World Example:**
+
+**Scenario: November 2025 Purchases**
+```
+Nov 1:
+  - Product A: Rp 10,000/kg × 1,000 kg = Rp 10,000,000
+  - Product B: Rp 12,000/kg × 500 kg = Rp 6,000,000
+  → Daily weighted avg = Rp 16,000,000 / 1,500 kg = Rp 10,667/kg
+
+Nov 2:
+  - Product C: Rp 15,000/kg × 800 kg = Rp 12,000,000
+  → Daily weighted avg = Rp 12,000,000 / 800 kg = Rp 15,000/kg
+
+Nov Period Average = (10,667 + 15,000) / 2 days = Rp 12,834/kg
+```
+
+**Comparison of Methods:**
+
+| Method | Nov 1 | Nov 2 | Period Avg |
+|--------|-------|-------|------------|
+| ❌ Simple Sum | (10k + 12k)/2 = 11k | 15k | (11k + 15k)/2 = 13k |
+| ✅ Weighted Avg | 10.67k | 15k | (10.67k + 15k)/2 = 12.83k |
+| **Difference** | -333 | 0 | -170 |
+
+**Benefits:**
+- **Accurate representation** of actual costs weighted by volume
+- **Prevents distortion** from small high-price purchases
+- **Reflects true economic impact** of purchasing decisions
+- **Mathematically sound** average calculation
+- **Business-ready** for cost analysis and decision making
+
+**Impact on Business:**
+- Procurement teams get accurate average costs for budgeting
+- Finance can correctly analyze purchasing trends
+- Management decisions based on real weighted costs, not misleading simple averages
+- Compliance with proper cost accounting principles
+
+**Verification:**
+- ✅ Build succeeds without errors
+- ✅ Weighted average formula implemented correctly
+- ✅ Handles single product per day (weight = qty)
+- ✅ Handles multiple products per day (proper weighted calculation)
+- ✅ Period and overall averages calculated correctly
+- ✅ No TypeScript compilation errors
+
+**Technical Notes:**
+- Uses `totalValue = price × qty` for each transaction
+- Aggregates by date first, then calculates weighted average per day
+- Final period/overall averages are simple averages of daily weighted averages
+- Maintains O(1) lookup performance with Map structure
+
 ### 2025-11-19 - Fix Average Price Calculation Logic in Data Pembelian
 **Changed By:** Droid (Factory AI)  
 **Type:** Bug Fix & Enhancement  

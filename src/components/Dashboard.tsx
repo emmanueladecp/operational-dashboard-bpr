@@ -756,7 +756,7 @@ export default function Dashboard() {
       category: string;
       category_id: number;
       periods: Record<string, number>;
-      periodPrices: Record<string, Map<string, number>>; // Map of date -> total price per date
+      periodPrices: Record<string, Map<string, { totalValue: number; totalQty: number }>>; // Map of date -> {totalValue, totalQty} for weighted avg
       total: number;
     }>();
 
@@ -786,13 +786,18 @@ export default function Dashboard() {
       group.periods[period] += item.movementqty;
       group.total += item.movementqty;
 
-      // Aggregate prices for average calculation (group by unique date within period)
+      // Aggregate prices for weighted average calculation (group by unique date within period)
       if (!group.periodPrices[period]) {
-        group.periodPrices[period] = new Map<string, number>();
+        group.periodPrices[period] = new Map<string, { totalValue: number; totalQty: number }>();
       }
       const dateMap = group.periodPrices[period];
-      const currentDateTotal = dateMap.get(fullDate) || 0;
-      dateMap.set(fullDate, currentDateTotal + item.priceharian);
+      const currentData = dateMap.get(fullDate) || { totalValue: 0, totalQty: 0 };
+      
+      // Calculate weighted average: sum(price * qty) / sum(qty)
+      dateMap.set(fullDate, {
+        totalValue: currentData.totalValue + (item.priceharian * item.movementqty),
+        totalQty: currentData.totalQty + item.movementqty
+      });
     });
 
     return Array.from(grouped.values()).sort((a, b) => 
@@ -1993,35 +1998,47 @@ export default function Dashboard() {
                                     );
                                   }
                                   
-                                  // Calculate average: sum of all date prices / number of unique dates
-                                  let sumOfDailyPrices = 0;
-                                  dateMap.forEach(dailyPrice => {
-                                    sumOfDailyPrices += dailyPrice;
+                                  // Calculate weighted average for the period: sum of all daily weighted averages / number of unique dates
+                                  let sumOfDailyWeightedAvg = 0;
+                                  let dayCount = 0;
+                                  
+                                  dateMap.forEach(dayData => {
+                                    if (dayData.totalQty > 0) {
+                                      // Weighted average for this day: totalValue / totalQty
+                                      const dailyWeightedAvg = dayData.totalValue / dayData.totalQty;
+                                      sumOfDailyWeightedAvg += dailyWeightedAvg;
+                                      dayCount++;
+                                    }
                                   });
-                                  const avgPrice = sumOfDailyPrices / dateMap.size; // Divide by unique days count
+                                  
+                                  const periodAvg = dayCount > 0 ? sumOfDailyWeightedAvg / dayCount : 0;
                                   
                                   return (
                                     <TableCell key={period} className="text-right text-sm text-gray-700">
-                                      {avgPrice > 0 ? `Rp ${Math.round(avgPrice).toLocaleString('id-ID')}` : '-'}
+                                      {periodAvg > 0 ? `Rp ${Math.round(periodAvg).toLocaleString('id-ID')}` : '-'}
                                     </TableCell>
                                   );
                                 })}
                                 <TableCell className="text-right text-sm text-gray-700 italic">
                                   {(() => {
-                                    // Calculate overall average price across all periods
-                                    let totalSumOfDailyPrices = 0;
-                                    let totalUniqueDays = 0;
+                                    // Calculate overall weighted average price across all periods
+                                    let sumOfDailyWeightedAvg = 0;
+                                    let totalDayCount = 0;
                                     
                                     Object.values(item.periodPrices).forEach(dateMap => {
                                       if (dateMap && dateMap.size > 0) {
-                                        dateMap.forEach(dailyPrice => {
-                                          totalSumOfDailyPrices += dailyPrice;
+                                        dateMap.forEach(dayData => {
+                                          if (dayData.totalQty > 0) {
+                                            // Weighted average for this day: totalValue / totalQty
+                                            const dailyWeightedAvg = dayData.totalValue / dayData.totalQty;
+                                            sumOfDailyWeightedAvg += dailyWeightedAvg;
+                                            totalDayCount++;
+                                          }
                                         });
-                                        totalUniqueDays += dateMap.size;
                                       }
                                     });
                                     
-                                    const overallAvg = totalUniqueDays > 0 ? totalSumOfDailyPrices / totalUniqueDays : 0;
+                                    const overallAvg = totalDayCount > 0 ? sumOfDailyWeightedAvg / totalDayCount : 0;
                                     return overallAvg > 0 ? `Rp ${Math.round(overallAvg).toLocaleString('id-ID')}` : '-';
                                   })()}
                                 </TableCell>
