@@ -53,6 +53,270 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-19 - Fix Average Price Calculation Logic in Data Pembelian
+**Changed By:** Droid (Factory AI)  
+**Type:** Bug Fix & Enhancement  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Fixed price calculation to use unique days
+
+**Description:**
+Corrected the average price calculation logic to properly handle cases where multiple products are purchased on the same day. The calculation now correctly computes: **sum of daily prices / number of unique days with purchases**.
+
+**Problem Identified:**
+Previous implementation counted each record (product purchase) as a separate day, which was incorrect when multiple products were purchased on the same date within the same category.
+
+**Example of Issue:**
+```
+Date: 2025-11-01
+  - Product A: Rp 10,000
+  - Product B: Rp 12,000
+Date: 2025-11-02
+  - Product C: Rp 15,000
+
+❌ Old calculation: (10,000 + 12,000 + 15,000) / 3 records = Rp 12,333
+✅ New calculation: (22,000 + 15,000) / 2 days = Rp 18,500
+```
+
+**Changes Made:**
+
+**1. Updated Data Structure:**
+Changed from simple counter to Map-based grouping:
+```typescript
+// Before:
+periodPrices: Record<string, { sum: number; count: number }>
+
+// After:
+periodPrices: Record<string, Map<string, number>> // date -> total price per date
+```
+
+**2. Modified Price Aggregation Logic:**
+```typescript
+// Now groups by unique date (YYYY-MM-DD) within each period
+const fullDate = item.periode_date; // YYYY-MM-DD
+const dateMap = group.periodPrices[period];
+const currentDateTotal = dateMap.get(fullDate) || 0;
+dateMap.set(fullDate, currentDateTotal + item.priceharian);
+```
+
+**Benefits:**
+- **Handles multiple products per day**: Sums prices for all products purchased on same date
+- **Accurate unique day counting**: Uses Map.size to count actual unique days
+- **Correct period averaging**: Divides by number of days, not number of records
+
+**3. Updated Display Calculation:**
+Per period average:
+```typescript
+let sumOfDailyPrices = 0;
+dateMap.forEach(dailyPrice => {
+  sumOfDailyPrices += dailyPrice;
+});
+const avgPrice = sumOfDailyPrices / dateMap.size; // Divide by unique days
+```
+
+Overall average:
+```typescript
+let totalSumOfDailyPrices = 0;
+let totalUniqueDays = 0;
+Object.values(item.periodPrices).forEach(dateMap => {
+  dateMap.forEach(dailyPrice => {
+    totalSumOfDailyPrices += dailyPrice;
+  });
+  totalUniqueDays += dateMap.size;
+});
+const overallAvg = totalSumOfDailyPrices / totalUniqueDays;
+```
+
+**Calculation Formula:**
+```
+Average Price per Period = Σ(Price per unique day) / Count(unique days)
+
+Where:
+- Price per unique day = Sum of all priceharian for that date
+- Unique days = Distinct dates with purchases in that period
+```
+
+**Example Scenarios:**
+
+**Scenario 1 - Single product per day:**
+```
+Nov 1: Product A (Rp 10,000) → Daily total: Rp 10,000
+Nov 2: Product B (Rp 12,000) → Daily total: Rp 12,000
+Average = (10,000 + 12,000) / 2 days = Rp 11,000
+```
+
+**Scenario 2 - Multiple products per day:**
+```
+Nov 1: Product A (Rp 10,000) + Product B (Rp 12,000) → Daily total: Rp 22,000
+Nov 3: Product C (Rp 15,000) → Daily total: Rp 15,000
+Average = (22,000 + 15,000) / 2 days = Rp 18,500
+```
+
+**Verification:**
+- ✅ Build succeeds without errors
+- ✅ Logic handles single product per day correctly
+- ✅ Logic handles multiple products per day correctly
+- ✅ Unique day counting accurate (Map.size)
+- ✅ Overall average calculated correctly across all periods
+- ✅ No TypeScript compilation errors
+
+**Technical Notes:**
+- Uses JavaScript Map for O(1) date lookup and automatic uniqueness
+- Maintains backward compatibility with existing display format
+- No breaking changes to UI or data fetching logic
+
+### 2025-11-19 - Add Average Price Display in Data Pembelian
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Enhancement  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Added average price calculation and display per period
+
+**Description:**
+Enhanced the Data Pembelian (Purchases) table to display average prices per period. Each category now shows two rows: quantity data and average price data calculated from the `priceharian` column.
+
+**Changes Made:**
+
+**1. Updated Data Processing (`processedPembelianData`):**
+Added price aggregation logic:
+```typescript
+periodPrices: Record<string, { sum: number; count: number }>
+```
+- Tracks sum of prices and count of entries per period
+- Calculates average by dividing sum by count
+- Maintains separate tracking for each location/category/period combination
+
+**2. Modified Table Structure:**
+- Added "Tipe Data" column header
+- Changed "Total" to "Total/Avg" header
+- Each category now displays **2 rows**:
+  - **Row 1 (Qty)**: Quantity data in kg with label "Qty (kg)"
+  - **Row 2 (Price)**: Average price with label "Harga Avg"
+- Used `rowSpan={2}` for Location and Category columns to span both rows
+- Price row has gray background (`bg-gray-50`) for visual distinction
+
+**3. Price Formatting:**
+- Format: `Rp {amount}` with Indonesian thousand separator
+- Rounded to nearest integer (no decimals)
+- Shows "-" for periods with no data
+- Overall average calculated across all periods displayed in Total/Avg column
+
+**4. Visual Design:**
+- Quantity rows: White background, bold total
+- Price rows: Light gray background, regular font, italic for overall average
+- Text sizing: `text-xs` for labels, `text-sm` for prices
+- Color coding: Gray text for prices vs green for quantities
+
+**Benefits:**
+- Complete pricing visibility per period
+- Easy comparison of price trends across months
+- Average calculation handles daily price variations
+- Clear visual separation between quantity and price data
+- Maintains consistent UX with existing design patterns
+
+**Technical Details:**
+- Price source: `priceharian` column (daily price)
+- Calculation: Average = sum(priceharian) / count(records) per period
+- Grouping: Same as quantity (location → category → period)
+- Format: Indonesian Rupiah with thousand separators
+- Precision: Rounded to nearest Rp (no decimals)
+
+**Example Display:**
+```
+Lokasi    | Kategori      | Tipe Data  | Nov 2025 | Des 2025 | Total/Avg
+----------|---------------|------------|----------|----------|----------
+Jakarta   | Beras Premium | Qty (kg)   | 1,500    | 2,000    | 3,500 kg
+          |               | Harga Avg  | Rp 15,000| Rp 16,000| Rp 15,500
+```
+
+**Verification:**
+- ✅ Build succeeds without errors
+- ✅ Price calculation logic correct (average per period)
+- ✅ Overall average calculation correct (across all periods)
+- ✅ Indonesian Rupiah formatting applied
+- ✅ Visual distinction between quantity and price rows
+- ✅ Table layout maintains readability with rowSpan
+
+### 2025-11-19 - Implement Data Pembelian (Purchases) Real Data Integration
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Enhancement  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Added real pembelian data fetching and display
+
+**Description:**
+Replaced mock data in the "Data Pembelian" tab with real data fetched from the `pembelian` Supabase table. The new implementation matches the design and functionality of the existing "Data Penjualan" (Sales) tab, providing a consistent user experience across both data views.
+
+**Changes Made:**
+
+**1. Added State Variables:**
+- `pembelianData`: Stores filtered purchase data
+- `pembelianDataUnfiltered`: Stores unfiltered data for filter options
+- `isLoadingPembelian`: Loading state indicator
+- `pembelianPeriodFilter`: Selected period filters (YYYY-MM format)
+- `selectedPembelianPeriodRange`: Selected time range (1-3 months)
+- `pembelianError`: Error state for user feedback
+
+**2. Added Data Fetching Logic:**
+- Created `useEffect` hook to fetch data from `pembelian` table based on:
+  - Period filter (date range)
+  - Location filter (shared with Stock and Sales)
+- Converts period filters (YYYY-MM) to date range queries
+- Applies client-side filtering for location selection
+- Implements proper error handling and loading states
+
+**3. Added Data Processing:**
+- Created `processedPembelianData` useMemo hook that:
+  - Groups data by location → category → period
+  - Extracts YYYY-MM period from `periode_date` field
+  - Aggregates `movementqty` by period
+  - Sorts results by location and category
+- Created `totalPembelianFromData` calculation for summary statistics
+
+**4. Updated UI Components:**
+- **Quick Stats Card**: Updated "Total Pembelian" to display real data in Tons with period indicator
+- **Purchases Tab**: Complete redesign matching Sales tab layout:
+  - Period filter (1-3 months) with dropdown
+  - Location filter with checkboxes (shared with other tabs)
+  - Loading state with spinner
+  - Error state with retry button
+  - Empty state for no data
+  - Summary card showing total in Tons
+  - Data table with:
+    - Columns: Location, Category, each selected period, Total
+    - Formatted month/year headers (Indonesian)
+    - Formatted quantities with thousand separators
+    - Hover effects on rows
+    - Total column in bold
+
+**5. Cleaned Up Mock Data:**
+Removed unused variables and functions:
+- `timePeriod` state (replaced by `selectedPembelianPeriodRange`)
+- `viewBy` state (not used in new design)
+- `getSalesData()` function (mock data)
+- `getPurchaseData()` function (mock data)
+- `salesData`, `purchaseData`, `totalPurchases` useMemo hooks
+
+**Benefits:**
+- Real-time data from production database
+- Consistent UX with Sales tab
+- Proper RLS filtering by user role and location
+- Period-based filtering with flexible time ranges
+- Better error handling and loading states
+- Cleaner codebase without mock data
+
+**Technical Details:**
+- Data source: `pembelian` table in Supabase
+- Period conversion: `periode_date` (DATE) → YYYY-MM string grouping
+- Filtering: Location-based (shared filter state)
+- Aggregation: Sum of `movementqty` per location/category/period
+- Display: Kg for individual cells, Tons for totals
+
+**Verification:**
+- ✅ Build succeeds without errors (`npm run build`)
+- ✅ TypeScript compilation successful
+- ✅ No console errors or warnings
+- ✅ Data fetching logic follows existing patterns
+- ✅ UI matches Sales tab design
+- ✅ Filters work correctly (period and location)
+
 ### 2025-11-19 - Fix Detail Stok BROKEN Badge Label
 **Changed By:** Droid (Factory AI)  
 **Type:** Bug Fix  

@@ -174,8 +174,6 @@ export default function Dashboard() {
   const [currentUserLocations, setCurrentUserLocations] = useState<number[]>([]);
   const [allLocations, setAllLocations] = useState<Location[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
-  const [timePeriod, setTimePeriod] = useState("1");
-  const [viewBy, setViewBy] = useState("location");
   const [searchTerm, setSearchTerm] = useState("");
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
   const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
@@ -204,6 +202,15 @@ export default function Dashboard() {
   const [selectedPeriodRange, setSelectedPeriodRange] = useState<string>('3');
   const [salesError, setSalesError] = useState<string | null>(null);
   // Note: locationFilter (shared with Stock BB/FG) is used for sales location filtering
+
+  // Pembelian (Purchases) state variables
+  const [pembelianData, setPembelianData] = useState<any[]>([]);
+  const [pembelianDataUnfiltered, setPembelianDataUnfiltered] = useState<any[]>([]);
+  const [isLoadingPembelian, setIsLoadingPembelian] = useState(true);
+  const [pembelianPeriodFilter, setPembelianPeriodFilter] = useState<string[]>([]);
+  const [selectedPembelianPeriodRange, setSelectedPembelianPeriodRange] = useState<string>('3');
+  const [pembelianError, setPembelianError] = useState<string | null>(null);
+  // Note: locationFilter (shared with Stock BB/FG and Sales) is also used for pembelian location filtering
 
   // Create authenticated client
   const supabaseClient = useMemo(() => {
@@ -422,6 +429,14 @@ export default function Dashboard() {
     }
   }, [salesPeriodFilter.length]);
 
+  // Initialize default period filter for pembelian (last 3 months)
+  useEffect(() => {
+    if (pembelianPeriodFilter.length === 0) {
+      const defaultPeriods = getLastNMonthsPeriods(3);
+      setPembelianPeriodFilter(defaultPeriods);
+    }
+  }, [pembelianPeriodFilter.length]);
+
   // Fetch sales summary data from Supabase (unfiltered for filter options)
   useEffect(() => {
     if (supabaseClient && salesPeriodFilter.length > 0) {
@@ -473,6 +488,67 @@ export default function Dashboard() {
       fetchSalesSummaryData();
     }
   }, [supabaseClient, salesPeriodFilter, locationFilter]);
+
+  // Fetch pembelian data from Supabase
+  useEffect(() => {
+    if (supabaseClient && pembelianPeriodFilter.length > 0) {
+      const fetchPembelianData = async () => {
+        setIsLoadingPembelian(true);
+        setPembelianError(null);
+        try {
+          // Convert period filters to date range
+          const startDate = pembelianPeriodFilter[pembelianPeriodFilter.length - 1] + '-01';
+          const endPeriod = pembelianPeriodFilter[0];
+          const endDate = new Date(endPeriod + '-01');
+          endDate.setMonth(endDate.getMonth() + 1);
+          endDate.setDate(0); // Last day of the month
+          const endDateStr = endDate.toISOString().split('T')[0];
+
+          // Fetch unfiltered data (only period filter) for filter options
+          const unfilteredQuery = supabaseClient
+            .from('pembelian')
+            .select('*')
+            .gte('periode_date', startDate)
+            .lte('periode_date', endDateStr)
+            .order('periode_date', { ascending: false })
+            .order('location')
+            .order('product_name');
+
+          const { data: unfilteredData, error: unfilteredError } = await unfilteredQuery;
+
+          if (unfilteredError) {
+            console.error('Error fetching pembelian data:', unfilteredError);
+            setPembelianError('Gagal memuat data pembelian. Silakan refresh halaman.');
+            return;
+          }
+
+          setPembelianDataUnfiltered(unfilteredData || []);
+
+          // Apply client-side filtering for the table data
+          let filteredData = unfilteredData || [];
+
+          // Apply location filter if selected (using shared locationFilter state)
+          if (!locationFilter.includes('all') && locationFilter.length > 0) {
+            filteredData = filteredData.filter(item => 
+              locationFilter.includes(item.location) // Filter by location name (string)
+            );
+          } else if (locationFilter.length === 0) {
+            // If no locations selected, show no data
+            filteredData = [];
+          }
+
+          setPembelianData(filteredData);
+        } catch (error) {
+          console.error('Error in fetchPembelianData:', error);
+          setPembelianError('Terjadi kesalahan saat memuat data pembelian.');
+        } finally {
+          setIsLoadingPembelian(false);
+        }
+      };
+
+      fetchPembelianData();
+    }
+  }, [supabaseClient, pembelianPeriodFilter, locationFilter]);
 
   // Process stock data for BB (Raw Materials) and FG (Finished Goods) separately
   const processedStockDataBB = useMemo(() => {
@@ -669,6 +745,61 @@ export default function Dashboard() {
     );
   }, [salesSummaryData]);
 
+  // Process pembelian data with grouping by location → category → period
+  const processedPembelianData = useMemo(() => {
+    if (!pembelianData.length) return [];
+
+    // Group by location → category → period (YYYY-MM)
+    const grouped = new Map<string, {
+      location: string;
+      m_location_id: number;
+      category: string;
+      category_id: number;
+      periods: Record<string, number>;
+      periodPrices: Record<string, Map<string, number>>; // Map of date -> total price per date
+      total: number;
+    }>();
+
+    pembelianData.forEach(item => {
+      const period = item.periode_date.substring(0, 7); // Extract YYYY-MM from date
+      const fullDate = item.periode_date; // Full date (YYYY-MM-DD)
+      const key = `${item.m_location_id}-${item.category_id || item.category_name}`;
+      
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          location: item.location,
+          m_location_id: item.m_location_id,
+          category: item.category_name || 'Uncategorized',
+          category_id: item.category_id || 0,
+          periods: {},
+          periodPrices: {},
+          total: 0
+        });
+      }
+
+      const group = grouped.get(key)!;
+      
+      // Aggregate quantities
+      if (!group.periods[period]) {
+        group.periods[period] = 0;
+      }
+      group.periods[period] += item.movementqty;
+      group.total += item.movementqty;
+
+      // Aggregate prices for average calculation (group by unique date within period)
+      if (!group.periodPrices[period]) {
+        group.periodPrices[period] = new Map<string, number>();
+      }
+      const dateMap = group.periodPrices[period];
+      const currentDateTotal = dateMap.get(fullDate) || 0;
+      dateMap.set(fullDate, currentDateTotal + item.priceharian);
+    });
+
+    return Array.from(grouped.values()).sort((a, b) => 
+      a.location.localeCompare(b.location) || a.category.localeCompare(b.category)
+    );
+  }, [pembelianData]);
+
   // Get unique locations from sales data (use unfiltered data for filter options)
   // Returns array of location names (strings) to match locationFilter format
   const uniqueSalesLocations = useMemo(() => {
@@ -683,6 +814,12 @@ export default function Dashboard() {
   const totalSalesFromSummary = useMemo(() => 
     processedSalesData.reduce((sum, item) => sum + item.total, 0),
     [processedSalesData]
+  );
+
+  // Calculate total pembelian from processed data
+  const totalPembelianFromData = useMemo(() => 
+    processedPembelianData.reduce((sum, item) => sum + item.total, 0),
+    [processedPembelianData]
   );
 
   // Prepare data for period comparison chart (grouped by location)
@@ -731,47 +868,7 @@ export default function Dashboard() {
     });
   }, [salesSummaryData, salesPeriodFilter]);
 
-  // Mock data for sales (varies by time period)
-  const getSalesData = (period: string) => {
-    const baseData = [
-      { name: "Jakarta", value: 145, category: "Premium" },
-      { name: "Surabaya", value: 98, category: "Standar" },
-      { name: "Bandung", value: 67, category: "Organik" },
-      { name: "Medan", value: 89, category: "Premium" },
-      { name: "Yogyakarta", value: 45, category: "Standar" },
-    ];
 
-    const multiplier = period === "1" ? 1 : period === "2" ? 1.8 : 2.5;
-    let data = baseData.map(item => ({ ...item, value: Math.round(item.value * multiplier) }));
-
-    // Filter for sales roles
-    if (userRole === 'SALES_MANAGER_ROLE' || userRole === 'SALES_SUPERVISOR_ROLE') {
-      const currentUserLocationNames = getCurrentUserLocationNames();
-      data = data.filter(item => currentUserLocationNames.includes(item.name));
-    }
-
-    return data;
-  };
-
-  // Mock data for purchases
-  const getPurchaseData = (period: string) => {
-    const baseData = [
-      { name: "Petani Lokal - Jawa", value: 200, category: "Beras Mentah" },
-      { name: "Koperasi - Sumatera", value: 150, category: "Beras Mentah" },
-      { name: "Supplier Premium", value: 80, category: "Beras Khusus" },
-      { name: "Perkebunan Organik", value: 60, category: "Beras Organik" },
-    ];
-
-    const multiplier = period === "1" ? 1 : period === "2" ? 1.9 : 2.7;
-    let data = baseData.map(item => ({ ...item, value: Math.round(item.value * multiplier) }));
-
-    // Filter for sales roles (assuming purchases are associated with locations, but since mock doesn't have location, skip for now or add location to mock)
-    if (userRole === 'SALES_MANAGER_ROLE' || userRole === 'SALES_SUPERVISOR_ROLE') {
-      // For purchases, since mock doesn't have location, show all for now
-    }
-
-    return data;
-  };
 
   const pieColors = ['#22c55e', '#16a34a', '#15803d', '#166534', '#14532d'];
 
@@ -1146,10 +1243,6 @@ export default function Dashboard() {
     ), [allLocations, searchTerm]
   );
 
-  const salesData = useMemo(() => getSalesData(timePeriod), [timePeriod, userRole, currentUserLocations]);
-  const purchaseData = useMemo(() => getPurchaseData(timePeriod), [timePeriod, userRole, currentUserLocations]);
-  const totalSales = useMemo(() => salesData.reduce((sum, item) => sum + item.value, 0), [salesData]);
-  const totalPurchases = useMemo(() => purchaseData.reduce((sum, item) => sum + item.value, 0), [purchaseData]);
   const totalStockBB = useMemo(() =>
     processedStockData.reduce((sum, item) => sum + item.quantity, 0),
     [processedStockData]
@@ -1295,8 +1388,13 @@ export default function Dashboard() {
           <Card className="p-4 border-green-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-green-600 mb-1">Pembelian ({timePeriod} bulan)</p>
-                <p className="text-2xl font-bold text-green-800">{totalPurchases.toLocaleString('id-ID')} Kilogram</p>
+                <p className="text-sm text-green-600 mb-1">Total Pembelian</p>
+                <p className="text-2xl font-bold text-green-800">
+                  {(totalPembelianFromData / 1000).toLocaleString('id-ID', { maximumFractionDigits: 2 })} Ton
+                </p>
+                <p className="text-xs text-green-500 mt-1">
+                  {selectedPembelianPeriodRange} bulan terakhir
+                </p>
               </div>
               <TrendingDown className="w-8 h-8 text-green-600" />
             </div>
@@ -1742,81 +1840,199 @@ export default function Dashboard() {
           <TabsContent value="purchases" className="space-y-4">
             <Card className="border-green-200">
               <div className="p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-2 sm:space-y-0">
-                  <h3 className="text-lg font-semibold text-green-800">Analitik Pembelian</h3>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Select value={timePeriod} onValueChange={setTimePeriod}>
-                      <SelectTrigger className="w-full sm:w-32 border-green-200">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1 Bulan</SelectItem>
-                        <SelectItem value="2">2 Bulan</SelectItem>
-                        <SelectItem value="3">3 Bulan</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={viewBy} onValueChange={setViewBy}>
-                      <SelectTrigger className="w-full sm:w-40 border-green-200">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="location">Berdasarkan Lokasi</SelectItem>
-                        <SelectItem value="category">Berdasarkan Kategori</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Purchase Chart */}
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={purchaseData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#dcfce7" />
-                        <XAxis 
-                          dataKey="name" 
-                          tick={{ fontSize: 12 }}
-                          stroke="#166534"
-                        />
-                        <YAxis tick={{ fontSize: 12 }} stroke="#166534" />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: '#f0fdf4', 
-                            border: '1px solid #bbf7d0',
-                            borderRadius: '8px'
-                          }}
-                        />
-                        <Bar dataKey="value" fill="#15803d" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+                <div className="flex flex-col space-y-4 mb-6">
+                  <h3 className="text-lg font-semibold text-green-800">Data Pembelian</h3>
                   
-                  {/* Purchase Distribution */}
-                  <div className="space-y-3">
-                    {purchaseData.map((item, index) => (
-                      <div key={index} className="p-4 bg-green-50 rounded-lg border border-green-100">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h4 className="font-medium text-green-800">{item.name}</h4>
-                            <Badge variant="outline" className="text-xs border-green-300 text-green-700 mt-1">
-                              {item.category}
-                            </Badge>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-bold text-green-800">{item.value.toLocaleString('id-ID')} Kilogram</p>
-                          </div>
-                        </div>
+                  {/* Filters */}
+                  <div className="flex flex-col space-y-3 p-4 bg-green-50 rounded-lg border border-green-100">
+                    {/* Period Filter */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Label className="text-sm text-green-700 font-medium min-w-[80px]">Periode:</Label>
+                      <Select 
+                        value={selectedPembelianPeriodRange} 
+                        onValueChange={(value) => {
+                          setPembelianPeriodFilter(getPeriodRange(value));
+                          setSelectedPembelianPeriodRange(value);
+                        }}
+                      >
+                        <SelectTrigger className="w-40 border-green-200">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">Bulan Ini</SelectItem>
+                          <SelectItem value="2">2 Bulan Terakhir</SelectItem>
+                          <SelectItem value="3">3 Bulan Terakhir</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="text-xs text-green-600 ml-2">
+                        {pembelianPeriodFilter.length > 0 && `(${pembelianPeriodFilter.join(', ')})`}
                       </div>
-                    ))}
+                    </div>
+
+                    {/* Location Filter - Shared with Stock BB/FG and Sales */}
+                    <div className="flex flex-wrap items-start gap-2">
+                      <Label className="text-sm text-green-700 font-medium min-w-[80px] pt-1">Lokasi:</Label>
+                      <div className="flex flex-wrap gap-2">
+                        <div className="flex items-center space-x-1">
+                          <Checkbox
+                            id="all-pembelian-locations"
+                            checked={locationFilter.includes('all')}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setLocationFilter(['all']);
+                              } else if (locationFilter.length === 1) {
+                                setLocationFilter([]);
+                              }
+                            }}
+                          />
+                          <Label htmlFor="all-pembelian-locations" className="text-xs text-green-700">Semua</Label>
+                        </div>
+                        {allLocations.filter(location => location.is_active).sort((a, b) => a.name.localeCompare(b.name)).map((location) => (
+                          <div key={location.id} className="flex items-center space-x-1">
+                            <Checkbox
+                              id={`pembelian-loc-${location.id}`}
+                              checked={locationFilter.includes(location.name)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  if (locationFilter.includes('all')) {
+                                    setLocationFilter([location.name]);
+                                  } else {
+                                    setLocationFilter(prev => [...prev.filter(l => l !== 'all'), location.name]);
+                                  }
+                                } else {
+                                  setLocationFilter(prev => prev.filter(l => l !== location.name));
+                                }
+                              }}
+                            />
+                            <Label htmlFor={`pembelian-loc-${location.id}`} className="text-xs text-green-700">
+                              {location.name}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
-                
-                {/* Purchase Summary */}
-                <div className="mt-6 p-4 bg-green-50 rounded-lg">
-                  <p className="text-green-800">
-                    <strong>Total Pembelian ({timePeriod} bulan):</strong> {totalPurchases.toLocaleString('id-ID')} Kilogram
-                  </p>
-                </div>
+
+                {/* Content: Loading, Error, or Data */}
+                {isLoadingPembelian ? (
+                  <div className="text-center py-12 text-green-600">
+                    <div className="animate-pulse">Memuat data pembelian...</div>
+                  </div>
+                ) : pembelianError ? (
+                  <div className="text-center py-12 text-red-600">
+                    <p className="font-medium">{pembelianError}</p>
+                    <Button 
+                      onClick={() => window.location.reload()} 
+                      className="mt-4 bg-green-600 hover:bg-green-700"
+                    >
+                      Refresh Halaman
+                    </Button>
+                  </div>
+                ) : processedPembelianData.length === 0 ? (
+                  <div className="text-center py-12 text-green-600">
+                    <p>Tidak ada data pembelian untuk filter yang dipilih</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Summary */}
+                    <div className="mb-6">
+                      <div className="p-3 bg-green-50 rounded-lg text-center">
+                        <p className="text-sm text-green-700">
+                          <strong>Total Keseluruhan:</strong> {(totalPembelianFromData / 1000).toLocaleString('id-ID', { maximumFractionDigits: 2 })} Ton
+                          <span className="text-xs ml-2">({selectedPembelianPeriodRange} bulan terakhir)</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Pembelian Data Table */}
+                    <div className="mb-6 overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="font-semibold">Lokasi</TableHead>
+                            <TableHead className="font-semibold">Kategori Produk</TableHead>
+                            <TableHead className="font-semibold">Tipe Data</TableHead>
+                            {pembelianPeriodFilter.map(period => (
+                              <TableHead key={period} className="font-semibold text-right">{formatMonthYear(period)}</TableHead>
+                            ))}
+                            <TableHead className="font-semibold text-right">Total/Avg</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {processedPembelianData.map((item, idx) => (
+                            <>
+                              {/* Quantity Row */}
+                              <TableRow key={`${idx}-qty`} className="hover:bg-green-50">
+                                <TableCell className="font-medium" rowSpan={2}>{item.location}</TableCell>
+                                <TableCell rowSpan={2}>
+                                  <Badge variant="outline" className="text-xs border-green-300 text-green-700">
+                                    {item.category}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-xs text-gray-600">Qty (kg)</TableCell>
+                                {pembelianPeriodFilter.map(period => (
+                                  <TableCell key={period} className="text-right">
+                                    {item.periods[period] ? item.periods[period].toLocaleString('id-ID') : '-'}
+                                  </TableCell>
+                                ))}
+                                <TableCell className="text-right font-bold text-green-800">
+                                  {item.total.toLocaleString('id-ID')} kg
+                                </TableCell>
+                              </TableRow>
+                              {/* Average Price Row */}
+                              <TableRow key={`${idx}-price`} className="hover:bg-green-50 bg-gray-50">
+                                <TableCell className="text-xs text-gray-600">Harga Avg</TableCell>
+                                {pembelianPeriodFilter.map(period => {
+                                  const dateMap = item.periodPrices[period];
+                                  if (!dateMap || dateMap.size === 0) {
+                                    return (
+                                      <TableCell key={period} className="text-right text-sm text-gray-700">
+                                        -
+                                      </TableCell>
+                                    );
+                                  }
+                                  
+                                  // Calculate average: sum of all date prices / number of unique dates
+                                  let sumOfDailyPrices = 0;
+                                  dateMap.forEach(dailyPrice => {
+                                    sumOfDailyPrices += dailyPrice;
+                                  });
+                                  const avgPrice = sumOfDailyPrices / dateMap.size; // Divide by unique days count
+                                  
+                                  return (
+                                    <TableCell key={period} className="text-right text-sm text-gray-700">
+                                      {avgPrice > 0 ? `Rp ${Math.round(avgPrice).toLocaleString('id-ID')}` : '-'}
+                                    </TableCell>
+                                  );
+                                })}
+                                <TableCell className="text-right text-sm text-gray-700 italic">
+                                  {(() => {
+                                    // Calculate overall average price across all periods
+                                    let totalSumOfDailyPrices = 0;
+                                    let totalUniqueDays = 0;
+                                    
+                                    Object.values(item.periodPrices).forEach(dateMap => {
+                                      if (dateMap && dateMap.size > 0) {
+                                        dateMap.forEach(dailyPrice => {
+                                          totalSumOfDailyPrices += dailyPrice;
+                                        });
+                                        totalUniqueDays += dateMap.size;
+                                      }
+                                    });
+                                    
+                                    const overallAvg = totalUniqueDays > 0 ? totalSumOfDailyPrices / totalUniqueDays : 0;
+                                    return overallAvg > 0 ? `Rp ${Math.round(overallAvg).toLocaleString('id-ID')}` : '-';
+                                  })()}
+                                </TableCell>
+                              </TableRow>
+                            </>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </>
+                )}
               </div>
             </Card>
           </TabsContent>
