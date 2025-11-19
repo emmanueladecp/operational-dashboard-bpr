@@ -53,6 +53,121 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-19 - Fix Detail Stok BROKEN Badge Label
+**Changed By:** Droid (Factory AI)  
+**Type:** Bug Fix  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Fixed product type badge in detail stok modal
+
+**Description:**
+Fixed incorrect badge label in the detail stok modal when viewing BROKEN products. Previously, the badge displayed "Barang Jadi (FG)" for BROKEN products, which was contextually incorrect.
+
+**Changes Made:**
+
+**1. Updated Badge Logic:**
+Changed from simple binary check (BB vs FG) to three-way check:
+```typescript
+// Before: Only checked RAW MATERIAL vs others
+{selectedStockItem.product_type === 'RAW MATERIAL' ? 'Bahan Baku (BB)' : 'Barang Jadi (FG)'}
+
+// After: Handles all three product types
+{selectedStockItem.product_type === 'RAW MATERIAL' 
+  ? 'Bahan Baku (BB)' 
+  : selectedStockItem.product_type === 'BROKEN'
+  ? 'Produk Broken'
+  : 'Barang Jadi (FG)'}
+```
+
+**2. Updated Badge Colors:**
+Added amber color scheme for BROKEN products to match the Total Stok Broken card:
+- **RAW MATERIAL**: Green background (`bg-green-100 text-green-800`)
+- **BROKEN**: Amber background (`bg-amber-100 text-amber-800`)
+- **FINISHED GOODS**: Blue background (`bg-blue-100 text-blue-800`)
+
+**Benefits:**
+- Correct contextual labeling for all product types
+- Consistent color scheme with other UI elements (Total Stok Broken card)
+- Improved user experience and clarity
+- No confusion between product categories
+
+**Verification:**
+- ✅ Build succeeds without errors
+- ✅ Badge logic handles all three product types correctly
+- ✅ Color scheme consistent with existing design patterns
+
+### 2025-11-19 - Create Pembelian (Purchases) Table SQL Migration
+**Changed By:** Droid (Factory AI)  
+**Type:** Database Migration  
+**Files Created:**
+- ✅ Created `supabase_pembelian_table.sql` - Complete table definition with RLS policies
+
+**Description:**
+Created a comprehensive SQL migration file for the `pembelian` (purchases) table to track purchase/procurement data per location and date period. The table includes full Row Level Security (RLS) policies following the same pattern as `production_recap` table.
+
+**Table Schema:**
+- `id` - Auto-incrementing primary key (BIGSERIAL)
+- `m_location_id` - Foreign key to master_locations (INTEGER)
+- `location` - Location name (TEXT, denormalized for performance)
+- `periode_date` - Transaction date in YYYY-MM-DD format (DATE)
+- `product_id` - Product identifier from ERP system (TEXT)
+- `product_name` - Product name/description (TEXT)
+- `movementqty` - Movement quantity, can be negative for returns (DECIMAL 15,2)
+- `subtotal` - Calculated amount (qty × price) (DECIMAL 15,2)
+- `priceharian` - Daily unit price (DECIMAL 15,2)
+- `category_id` - Product category identifier (INTEGER, nullable)
+- `category_name` - Category name/description (TEXT, nullable)
+- `created_at` - Record creation timestamp (TIMESTAMPTZ)
+- `updated_at` - Auto-updated timestamp (TIMESTAMPTZ)
+
+**Indexes Created:**
+- Single column indexes: m_location_id, location, periode_date, product_id, product_name, category_id
+- Composite indexes for common query patterns:
+  - (m_location_id, periode_date) - Location + date queries
+  - (product_id, periode_date) - Product trend analysis
+  - (category_id, periode_date) - Category-based reporting
+
+**RLS Policies Implemented:**
+- **SUPERADMIN_ROLE**: Full access (SELECT, INSERT, UPDATE, DELETE)
+- **BOD_ROLE**: View all purchase data across all locations
+- **AUDITOR_ROLE**: View all purchase data for audit purposes
+- **SALES_MANAGER_ROLE**: View only assigned locations (with active location check)
+- **SALES_SUPERVISOR_ROLE**: View only assigned locations (with active location check)
+
+**Additional Features:**
+1. **Helper Function**: Reuses `get_current_user_role()` function for consistent role checks
+2. **Updated_at Trigger**: Automatically updates `updated_at` column on record modifications
+3. **Aggregation Views Created:**
+   - `pembelian_with_location` - Joins with master_locations for detailed queries
+   - `pembelian_by_product` - Monthly aggregation by product with price statistics
+   - `pembelian_by_category` - Monthly aggregation by category
+   - `pembelian_by_location` - Monthly aggregation by location with product/category counts
+
+**Permissions Granted:**
+- Authenticated users: SELECT (filtered by RLS)
+- Service role: ALL operations (for admin and sync functions)
+- Sequence usage granted to service_role for id generation
+
+**Benefits:**
+- Complete audit trail with price history (priceharian field)
+- Supports returns/adjustments (negative movementqty)
+- Optimized for reporting with pre-built aggregation views
+- Consistent with existing table RLS patterns
+- Ready for ERP integration via edge functions
+
+**Deployment Instructions:**
+1. Open Supabase Dashboard → SQL Editor
+2. Copy contents of `supabase_pembelian_table.sql`
+3. Execute to create table, indexes, views, and RLS policies
+4. Verify with: `SELECT * FROM pembelian LIMIT 10;`
+5. Test RLS by querying as different roles
+
+**Verification:**
+- ✅ Follows same RLS pattern as production_recap table
+- ✅ Includes comprehensive indexes for performance
+- ✅ Includes documentation comments on all objects
+- ✅ Ready for integration with dashboard frontend
+- ✅ Compatible with existing authentication and authorization system
+
 ### 2025-11-18 - Add Total Stok Broken Card to Dashboard
 **Changed By:** Droid (Factory AI)  
 **Type:** Feature Addition  

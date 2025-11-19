@@ -2211,9 +2211,15 @@ export default function Dashboard() {
                        <div className={`inline-flex px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${
                          selectedStockItem.product_type === 'RAW MATERIAL'
                            ? 'bg-green-100 text-green-800'
+                           : selectedStockItem.product_type === 'BROKEN'
+                           ? 'bg-amber-100 text-amber-800'
                            : 'bg-blue-100 text-blue-800'
                        }`}>
-                         {selectedStockItem.product_type === 'RAW MATERIAL' ? 'Bahan Baku (BB)' : 'Barang Jadi (FG)'}
+                         {selectedStockItem.product_type === 'RAW MATERIAL' 
+                           ? 'Bahan Baku (BB)' 
+                           : selectedStockItem.product_type === 'BROKEN'
+                           ? 'Produk Broken'
+                           : 'Barang Jadi (FG)'}
                        </div>
                      </div>
                    </div>
