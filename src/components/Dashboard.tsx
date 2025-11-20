@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { UserButton, useUser, useAuth } from "@clerk/clerk-react";
 //import { supabase } from "../lib/supabase";
-import { Package, TrendingUp, TrendingDown, MapPin, Plus, Edit, Trash2, Search, Users } from 'lucide-react';
+import { Package, Truck, ShoppingCart, Wheat, Sprout, MapPin, Plus, Edit, Trash2, Search, Users } from 'lucide-react';
 // Add these imports at the top
 import { useSession } from "@clerk/clerk-react";
 import { createClerkSupabaseClient, resetClerkSupabaseClient } from "../lib/supabase";
@@ -1354,7 +1354,7 @@ export default function Dashboard() {
                 <p className="text-sm text-green-600 mb-1">Total Stok BB</p>
                 <p className="text-2xl font-bold text-green-800">{ (totalStockBB/1000).toLocaleString('id-ID')} Ton</p>
               </div>
-              <Package className="w-8 h-8 text-green-600" />
+              <Sprout className="w-8 h-8 text-green-600" />
             </div>
           </Card>
           <Card className="p-4 border-green-200">
@@ -1372,7 +1372,7 @@ export default function Dashboard() {
                 <p className="text-sm text-green-600 mb-1">Total Stok FG</p>
                 <p className="text-2xl font-bold text-green-800">{( totalStockFG / 1000).toLocaleString('id-ID')} Ton</p>
               </div>
-              <Package className="w-8 h-8 text-green-600" />
+              <Wheat className="w-8 h-8 text-green-600" />
             </div>
           </Card>
           <Card className="p-4 border-green-200">
@@ -1386,7 +1386,7 @@ export default function Dashboard() {
                   {selectedPeriodRange} bulan terakhir
                 </p>
               </div>
-              <TrendingUp className="w-8 h-8 text-green-600" />
+              <Truck className="w-8 h-8 text-green-600" />
             </div>
           </Card>
           
@@ -1401,7 +1401,7 @@ export default function Dashboard() {
                   {selectedPembelianPeriodRange} bulan terakhir
                 </p>
               </div>
-              <TrendingDown className="w-8 h-8 text-green-600" />
+              <ShoppingCart className="w-8 h-8 text-green-600" />
             </div>
           </Card>
           <Card className="p-4 border-green-200">
