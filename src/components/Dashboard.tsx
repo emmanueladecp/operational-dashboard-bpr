@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { UserButton, useUser, useAuth } from "@clerk/clerk-react";
 //import { supabase } from "../lib/supabase";
-import { Package, Truck, ShoppingCart, Wheat, Sprout, MapPin, Plus, Edit, Trash2, Search, Users } from 'lucide-react';
+import { Package, Truck, ShoppingCart, Wheat, Sprout, Scale, MapPin, Plus, Edit, Trash2, Search, Users } from 'lucide-react';
 // Add these imports at the top
 import { useSession } from "@clerk/clerk-react";
 import { createClerkSupabaseClient, resetClerkSupabaseClient } from "../lib/supabase";
@@ -1263,6 +1263,12 @@ export default function Dashboard() {
     [processedStockDataBroken]
   );
 
+  // Calculate BB:Broken ratio
+  const ratioBBtoBroken = useMemo(() => {
+    if (totalStockBroken === 0) return 0;
+    return totalStockBB / totalStockBroken;
+  }, [totalStockBB, totalStockBroken]);
+
   // Filter and sort detailed stock items
   const filteredAndSortedProducts = useMemo(() => {
     if (!detailedStockItems.length) return [];
@@ -1347,7 +1353,7 @@ export default function Dashboard() {
       {/* Main Content */}
       <main className="px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
           <Card className="p-4 border-green-200">
             <div className="flex items-center justify-between">
               <div>
@@ -1402,6 +1408,20 @@ export default function Dashboard() {
                 </p>
               </div>
               <ShoppingCart className="w-8 h-8 text-green-600" />
+            </div>
+          </Card>
+          <Card className="p-4 border-blue-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-blue-600 mb-1">Rasio BB:Broken</p>
+                <p className="text-2xl font-bold text-blue-800">
+                  {ratioBBtoBroken > 0 ? `${ratioBBtoBroken.toLocaleString('id-ID', { maximumFractionDigits: 1 })} : 1` : '-'}
+                </p>
+                <p className="text-xs text-blue-500 mt-1">
+                  {ratioBBtoBroken > 0 ? `BB ${ratioBBtoBroken.toFixed(1)}x dari Broken` : 'No Broken stock'}
+                </p>
+              </div>
+              <Scale className="w-8 h-8 text-blue-600" />
             </div>
           </Card>
           <Card className="p-4 border-green-200">

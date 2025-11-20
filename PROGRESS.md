@@ -53,6 +53,79 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-20 - Add BB:Broken Ratio Metric to Quick Stats
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Addition  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Added ratio calculation and new card
+
+**Description:**
+Added a new Quick Stats card displaying the ratio between Total Stok BB and Total Stok Broken, providing insights into inventory balance and quality metrics.
+
+**Changes Made:**
+
+**1. Calculation Logic Added:**
+```typescript
+// Calculate BB:Broken ratio
+const ratioBBtoBroken = useMemo(() => {
+  if (totalStockBroken === 0) return 0;
+  return totalStockBB / totalStockBroken;
+}, [totalStockBB, totalStockBroken]);
+```
+
+**2. New Card Added:**
+- **Position**: After Total Pembelian card (6th card in Quick Stats)
+- **Color Theme**: Blue (border-blue-200, text-blue-600/800)
+- **Icon**: Scale ⚖️ (represents balance/comparison)
+- **Display Format**: "12.5 : 1" with caption "BB 12.5x dari Broken"
+
+**3. Grid Layout Updated:**
+- Changed from `lg:grid-cols-5` to `lg:grid-cols-6` to accommodate new card
+- Responsive: 1 column (mobile), 2 columns (tablet), 6 columns (desktop)
+
+**Card Content:**
+```
+┌─────────────────────────┐
+│ ⚖️ Rasio BB:Broken      │
+│                         │
+│     12.5 : 1            │ ← Main metric
+│                         │
+│  BB 12.5x dari Broken   │ ← Context caption
+└─────────────────────────┘
+```
+
+**Edge Cases Handled:**
+- **No Broken Stock**: Displays "-" and shows "No Broken stock" message
+- **Zero Division**: Returns 0 if totalStockBroken = 0
+- **Formatting**: Indonesian number format with 1 decimal place
+
+**Business Value:**
+- **Inventory Balance**: Quick visibility of BB vs Broken stock proportions
+- **Quality Indicator**: High ratio suggests good quality control (less broken rice)
+- **Production Planning**: Helps in raw material procurement decisions
+- **Performance Metric**: Tracks efficiency over time
+
+**Example Scenarios:**
+| Total BB | Total Broken | Ratio | Display |
+|----------|--------------|-------|---------|
+| 125 Ton | 10 Ton | 12.5:1 | 12.5 : 1 |
+| 200 Ton | 25 Ton | 8.0:1 | 8.0 : 1 |
+| 100 Ton | 0 Ton | 0 | - |
+
+**Visual Impact:**
+- Quick Stats now has 6 cards in desktop view
+- Blue color scheme distinguishes ratio card from stock cards (green)
+- Maintains consistent card sizing and layout
+
+**Verification:**
+- ✅ Build succeeds without errors (4.65s)
+- ✅ Ratio calculation logic correct
+- ✅ Zero division handled properly
+- ✅ Indonesian number formatting applied
+- ✅ Responsive grid layout works correctly
+
+---
+
 ### 2025-11-20 - Update Quick Stats Card Icons for Better Visual Representation
 **Changed By:** Droid (Factory AI)  
 **Type:** UI Enhancement  
