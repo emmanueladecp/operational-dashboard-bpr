@@ -53,6 +53,125 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-20 - Add Detailed BB vs Broken Comparison Section
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Addition  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Added detailed comparison card with visual bars
+
+**Description:**
+Added a comprehensive visual comparison section between Stok BB and Stok Broken, positioned after Quick Stats and before Main Tabs. Provides detailed insights with progress bars and multiple metrics.
+
+**Changes Made:**
+
+**1. New Section Added:**
+- **Position**: Between Quick Stats and Main Tabs (full width)
+- **Design**: Blue gradient card (from-blue-50 to-blue-100)
+- **Title**: "Perbandingan Stok BB vs Broken" with Scale icon
+
+**2. Visual Components:**
+
+**A. Progress Bars for Each Stock Type:**
+```typescript
+// BB Bar: Green gradient
+<div className="bg-gradient-to-r from-green-500 to-green-600" 
+     style={{ width: `${(BB / (BB + Broken)) * 100}%` }} />
+
+// Broken Bar: Amber gradient  
+<div className="bg-gradient-to-r from-amber-500 to-amber-600"
+     style={{ width: `${(Broken / (BB + Broken)) * 100}%` }} />
+```
+
+**B. Summary Metrics Grid (4 columns):**
+1. **Rasio BB:Broken** - Example: "12.5:1"
+2. **Total Stok** - BB + Broken in Tons
+3. **% Broken** - Percentage of Broken from total
+4. **% BB** - Percentage of BB from total
+
+**3. Card Layout:**
+```
+┌─────────────────────────────────────────────┐
+│ ⚖️ Perbandingan Stok BB vs Broken          │
+├─────────────────────────────────────────────┤
+│ Stok BB (Bahan Baku)          125.0 Ton    │
+│ ████████████░░░░                            │
+│ 92.6% dari total stok                       │
+│                                             │
+│ Stok Broken                    10.0 Ton    │
+│ █░░░░░░░░░░░░░░░                            │
+│ 7.4% dari total stok                        │
+├─────────────────────────────────────────────┤
+│ Rasio   │ Total  │ % Broken │ % BB         │
+│ 12.5:1  │ 135 Ton│  7.4%    │ 92.6%        │
+└─────────────────────────────────────────────┘
+```
+
+**4. Features:**
+- **Responsive Grid**: 1 column (mobile), 2 columns (desktop) for bars
+- **Dynamic Width**: Progress bars adjust based on actual stock proportions
+- **Smooth Transitions**: 500ms transition animation on width changes
+- **Icons**: Sprout for BB, Package for Broken
+- **Color Coding**: Green for BB, Amber for Broken
+
+**5. Metrics Calculated:**
+```typescript
+// Percentage of each stock type
+BB % = (totalStockBB / (totalStockBB + totalStockBroken)) × 100
+Broken % = (totalStockBroken / (totalStockBB + totalStockBroken)) × 100
+
+// Total combined stock
+Total = totalStockBB + totalStockBroken
+
+// Ratio (already calculated from previous feature)
+Ratio = totalStockBB / totalStockBroken
+```
+
+**6. Edge Cases Handled:**
+- **No Stock**: Displays "N/A" for percentages
+- **Zero Broken**: Progress bar width = 0%, displays "-" for ratio
+- **Large Numbers**: Indonesian number formatting with 1 decimal
+- **Overflow Prevention**: Math.min() ensures bars don't exceed 100%
+
+**Business Value:**
+- **Visual Comparison**: Immediate understanding of stock balance via bars
+- **Comprehensive Metrics**: 4 key metrics in one glance
+- **Quality Monitoring**: Low Broken % indicates good quality control
+- **Decision Support**: Helps procurement and production planning
+- **Trend Analysis**: Easy to spot changes over time
+
+**Example Scenarios:**
+| BB | Broken | BB % | Broken % | Ratio | Total |
+|----|--------|------|----------|-------|-------|
+| 125 Ton | 10 Ton | 92.6% | 7.4% | 12.5:1 | 135 Ton |
+| 200 Ton | 25 Ton | 88.9% | 11.1% | 8.0:1 | 225 Ton |
+| 100 Ton | 5 Ton | 95.2% | 4.8% | 20.0:1 | 105 Ton |
+
+**Visual Hierarchy:**
+```
+Quick Stats (6 cards)
+    ↓
+Detailed Comparison (Full width) ← NEW
+    ↓
+Main Tabs (Stock, Production, Sales, etc.)
+```
+
+**Benefits:**
+- **More Informative**: Shows absolute values + percentages + ratio + bars
+- **Better UX**: Visual bars easier to understand than numbers alone
+- **Prominent Display**: Full-width card gives appropriate importance
+- **Consistent Design**: Matches dashboard color scheme and styling
+- **Professional Look**: Gradient backgrounds and smooth animations
+
+**Verification:**
+- ✅ Build succeeds without errors (4.55s)
+- ✅ Progress bars render correctly with dynamic widths
+- ✅ All metrics calculate accurately
+- ✅ Responsive layout works on mobile and desktop
+- ✅ Edge cases handled (zero division, null values)
+- ✅ Color scheme consistent (blue card, green BB, amber Broken)
+
+---
+
 ### 2025-11-20 - Add BB:Broken Ratio Metric to Quick Stats
 **Changed By:** Droid (Factory AI)  
 **Type:** Feature Addition  

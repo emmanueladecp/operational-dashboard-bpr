@@ -1435,6 +1435,98 @@ export default function Dashboard() {
           </Card>
         </div>
 
+        {/* Detailed BB vs Broken Comparison */}
+        <Card className="p-6 border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Scale className="w-6 h-6 text-blue-600" />
+              <h3 className="text-lg font-semibold text-blue-900">Perbandingan Stok BB vs Broken</h3>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* BB Section */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sprout className="w-5 h-5 text-green-600" />
+                    <span className="font-semibold text-gray-700">Stok BB (Bahan Baku)</span>
+                  </div>
+                  <span className="text-xl font-bold text-green-700">
+                    {(totalStockBB / 1000).toLocaleString('id-ID', { maximumFractionDigits: 1 })} Ton
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                  <div 
+                    className="bg-gradient-to-r from-green-500 to-green-600 h-4 rounded-full transition-all duration-500"
+                    style={{ width: `${totalStockBB > 0 ? Math.min((totalStockBB / (totalStockBB + totalStockBroken)) * 100, 100) : 0}%` }}
+                  ></div>
+                </div>
+                <p className="text-sm text-gray-600">
+                  {totalStockBB > 0 && totalStockBroken > 0 
+                    ? `${((totalStockBB / (totalStockBB + totalStockBroken)) * 100).toFixed(1)}% dari total stok`
+                    : 'N/A'}
+                </p>
+              </div>
+
+              {/* Broken Section */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Package className="w-5 h-5 text-amber-600" />
+                    <span className="font-semibold text-gray-700">Stok Broken</span>
+                  </div>
+                  <span className="text-xl font-bold text-amber-700">
+                    {(totalStockBroken / 1000).toLocaleString('id-ID', { maximumFractionDigits: 1 })} Ton
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                  <div 
+                    className="bg-gradient-to-r from-amber-500 to-amber-600 h-4 rounded-full transition-all duration-500"
+                    style={{ width: `${totalStockBroken > 0 ? Math.min((totalStockBroken / (totalStockBB + totalStockBroken)) * 100, 100) : 0}%` }}
+                  ></div>
+                </div>
+                <p className="text-sm text-gray-600">
+                  {totalStockBB > 0 && totalStockBroken > 0 
+                    ? `${((totalStockBroken / (totalStockBB + totalStockBroken)) * 100).toFixed(1)}% dari total stok`
+                    : 'N/A'}
+                </p>
+              </div>
+            </div>
+
+            {/* Summary Metrics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-blue-300">
+              <div className="text-center">
+                <p className="text-sm text-gray-600 mb-1">Rasio BB:Broken</p>
+                <p className="text-2xl font-bold text-blue-700">
+                  {ratioBBtoBroken > 0 ? `${ratioBBtoBroken.toFixed(1)}:1` : '-'}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-gray-600 mb-1">Total Stok</p>
+                <p className="text-2xl font-bold text-gray-700">
+                  {((totalStockBB + totalStockBroken) / 1000).toLocaleString('id-ID', { maximumFractionDigits: 1 })} Ton
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-gray-600 mb-1">% Broken</p>
+                <p className="text-2xl font-bold text-amber-700">
+                  {totalStockBB + totalStockBroken > 0 
+                    ? `${((totalStockBroken / (totalStockBB + totalStockBroken)) * 100).toFixed(1)}%`
+                    : '-'}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-gray-600 mb-1">% BB</p>
+                <p className="text-2xl font-bold text-green-700">
+                  {totalStockBB + totalStockBroken > 0 
+                    ? `${((totalStockBB / (totalStockBB + totalStockBroken)) * 100).toFixed(1)}%`
+                    : '-'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
+
         {/* Main Tabs */}
         <Tabs defaultValue="stocks-bb" className="space-y-4">
           <div className="overflow-x-auto pb-2">
