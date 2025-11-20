@@ -1443,7 +1443,7 @@ export default function Dashboard() {
               <h3 className="text-lg font-semibold text-blue-900">Perbandingan Stok BB vs Broken</h3>
             </div>
             
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-4">
               {/* BB Section */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
