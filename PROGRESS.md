@@ -53,6 +53,69 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-20 - Simplify BB vs Broken Comparison Card Layout
+**Changed By:** Droid (Factory AI)  
+**Type:** UI Refinement  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Simplified comparison card display
+
+**Description:**
+Simplified the BB vs Broken comparison card by removing metrics and percentages, keeping only the essential visual comparison bars with quantities. Also improved layout spacing.
+
+**Changes Made:**
+
+**1. Removed Metrics Section:**
+- ❌ Removed "Total Stok" column
+- ❌ Removed "Rasio BB:Broken" metric
+- ❌ Removed "% Broken" percentage metric
+- ❌ Removed "% BB" percentage metric
+- Card now focuses purely on visual comparison
+
+**2. Removed Percentage Text:**
+- ❌ Removed "% dari total stok" text from Stok BB section
+- ❌ Removed "% dari total stok" text from Stok Broken section
+- Keeps only: Icon, Label, Quantity in Tons, and Progress Bar
+
+**3. Fixed Layout Spacing:**
+- Changed from grid 2-column layout (`md:grid-cols-2 gap-6`) to vertical layout (`space-y-4`)
+- BB and Broken sections now stack vertically on all screen sizes
+- Eliminated large horizontal gap between sections
+- More compact and cleaner display
+
+**4. Final Card Structure:**
+```
+┌─────────────────────────────────────────────┐
+│ ⚖️ Perbandingan Stok BB vs Broken          │
+├─────────────────────────────────────────────┤
+│ 🌱 Stok BB (Bahan Baku)       125.0 Ton    │
+│ ████████████░░░░                            │
+│                                             │
+│ 📦 Stok Broken                 10.0 Ton    │
+│ █░░░░░░░░░░░░░░░                            │
+└─────────────────────────────────────────────┘
+```
+
+**Benefits:**
+- Cleaner, more focused visual design
+- Reduced information overload
+- Better use of space with vertical layout
+- Consistent spacing throughout
+- Faster at-a-glance comparison
+
+**Commits:**
+- `c93b04a` - Remove Total Stok metric from BB vs Broken comparison card
+- `ea81c95` - Remove summary metrics from BB vs Broken comparison card
+- `6125944` - Remove percentage text from BB vs Broken comparison bars
+- `2e87225` - Fix spacing between BB and Broken sections in comparison card
+
+**Verification:**
+- ✅ Build succeeds without errors
+- ✅ All metrics removed successfully
+- ✅ Layout is more compact and readable
+- ✅ Visual comparison bars still functional
+
+---
+
 ### 2025-11-20 - Add Detailed BB vs Broken Comparison Section
 **Changed By:** Droid (Factory AI)  
 **Type:** Feature Addition  
