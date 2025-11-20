@@ -1461,11 +1461,6 @@ export default function Dashboard() {
                     style={{ width: `${totalStockBB > 0 ? Math.min((totalStockBB / (totalStockBB + totalStockBroken)) * 100, 100) : 0}%` }}
                   ></div>
                 </div>
-                <p className="text-sm text-gray-600">
-                  {totalStockBB > 0 && totalStockBroken > 0 
-                    ? `${((totalStockBB / (totalStockBB + totalStockBroken)) * 100).toFixed(1)}% dari total stok`
-                    : 'N/A'}
-                </p>
               </div>
 
               {/* Broken Section */}
@@ -1485,11 +1480,6 @@ export default function Dashboard() {
                     style={{ width: `${totalStockBroken > 0 ? Math.min((totalStockBroken / (totalStockBB + totalStockBroken)) * 100, 100) : 0}%` }}
                   ></div>
                 </div>
-                <p className="text-sm text-gray-600">
-                  {totalStockBB > 0 && totalStockBroken > 0 
-                    ? `${((totalStockBroken / (totalStockBB + totalStockBroken)) * 100).toFixed(1)}% dari total stok`
-                    : 'N/A'}
-                </p>
               </div>
             </div>
           </div>
