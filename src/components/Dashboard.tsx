@@ -1492,32 +1492,6 @@ export default function Dashboard() {
                 </p>
               </div>
             </div>
-
-            {/* Summary Metrics */}
-            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-blue-300">
-              <div className="text-center">
-                <p className="text-sm text-gray-600 mb-1">Rasio BB:Broken</p>
-                <p className="text-2xl font-bold text-blue-700">
-                  {ratioBBtoBroken > 0 ? `${ratioBBtoBroken.toFixed(1)}:1` : '-'}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-gray-600 mb-1">% Broken</p>
-                <p className="text-2xl font-bold text-amber-700">
-                  {totalStockBB + totalStockBroken > 0 
-                    ? `${((totalStockBroken / (totalStockBB + totalStockBroken)) * 100).toFixed(1)}%`
-                    : '-'}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-gray-600 mb-1">% BB</p>
-                <p className="text-2xl font-bold text-green-700">
-                  {totalStockBB + totalStockBroken > 0 
-                    ? `${((totalStockBB / (totalStockBB + totalStockBroken)) * 100).toFixed(1)}%`
-                    : '-'}
-                </p>
-              </div>
-            </div>
           </div>
         </Card>
 
