@@ -1681,28 +1681,40 @@ export default function Dashboard() {
                 ) : processedStockDataBroken.length === 0 ? (
                   <div className="text-center py-8 text-amber-600">Tidak ada data stok broken untuk lokasi Anda</div>
                 ) : (
-                  <div className="space-y-3">
-                    {processedStockDataBroken.map((item, index) => (
-                      <div
-                        key={`broken-${index}`}
-                        className="p-4 bg-amber-50 rounded-lg border border-amber-100 cursor-pointer hover:bg-amber-100 transition-colors"
-                        onClick={() => handleStockItemClick(item, "BROKEN")}
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-amber-800">{item.category}</h4>
-                            <div className="flex flex-wrap gap-2 mt-1">
-                              <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">
-                                {item.location}
-                              </Badge>
+                  <div className="space-y-6">
+                    {/* Broken Section */}
+                    {processedStockDataBroken.length > 0 && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="h-1 flex-1 bg-amber-200 rounded"></div>
+                          <h4 className="text-sm font-semibold text-amber-800 px-3 py-1 bg-amber-100 rounded-full">
+                            BROKEN
+                          </h4>
+                          <div className="h-1 flex-1 bg-amber-200 rounded"></div>
+                        </div>
+                        {processedStockDataBroken.map((item, index) => (
+                          <div
+                            key={`broken-${index}`}
+                            className="p-4 bg-amber-50 rounded-lg border border-amber-100 cursor-pointer hover:bg-amber-100 transition-colors"
+                            onClick={() => handleStockItemClick(item, "BROKEN")}
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                              <div className="flex-1">
+                                <h4 className="font-medium text-amber-800">{item.category}</h4>
+                                <div className="flex flex-wrap gap-2 mt-1">
+                                  <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">
+                                    {item.location}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-amber-800">{item.quantity.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} {item.unit}</p>
+                              </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-bold text-amber-800">{item.quantity.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} {item.unit}</p>
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
               </div>

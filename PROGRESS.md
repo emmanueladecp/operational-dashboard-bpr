@@ -53,6 +53,68 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-21 - Fix Level Stok Broken Styling Consistency
+**Changed By:** Droid (Factory AI)  
+**Type:** UI/UX Enhancement - Styling Fix  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Added decorative section header to Level Stok Broken
+
+**Description:**
+Fixed styling inconsistency in Level Stok Broken tab by adding the same decorative section header that's used in Level Stok BB, ensuring visual consistency across all stock sections.
+
+**Changes Made:**
+
+**1. Added Decorative Section Header:**
+- Added horizontal decorative lines (`bg-amber-200`) on both sides of section title
+- Added "BROKEN" badge with rounded-full style and amber colors (`bg-amber-100`, `text-amber-800`)
+- Applied consistent spacing with `space-y-6` wrapper and `space-y-3` inner spacing
+
+**2. Improved Structure:**
+- Wrapped stock items in conditional render with `{processedStockDataBroken.length > 0 && (...)}` for consistency
+- Maintained existing hover effects and click handlers
+- Preserved all existing functionality
+
+**Before:**
+```jsx
+<div className="space-y-3">
+  {processedStockDataBroken.map((item, index) => (
+    // Stock items without decorative header
+  ))}
+</div>
+```
+
+**After:**
+```jsx
+<div className="space-y-6">
+  {processedStockDataBroken.length > 0 && (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="h-1 flex-1 bg-amber-200 rounded"></div>
+        <h4 className="text-sm font-semibold text-amber-800 px-3 py-1 bg-amber-100 rounded-full">
+          BROKEN
+        </h4>
+        <div className="h-1 flex-1 bg-amber-200 rounded"></div>
+      </div>
+      // Stock items
+    </div>
+  )}
+</div>
+```
+
+**Benefits:**
+- **Visual Consistency**: Level Stok Broken now matches Level Stok BB design pattern
+- **Better UX**: Clear section identification with decorative header
+- **Professional Look**: Unified design language across all stock tabs
+- **Maintainability**: Consistent structure makes future updates easier
+
+**Technical Details:**
+- Section header uses amber color scheme matching tab colors
+- Responsive design maintained with flex layout
+- No breaking changes to existing functionality
+- Verified build success with no errors
+
+---
+
 ### 2025-11-21 - Apply 1 Decimal Point Rounding to Production Recap Components
 **Changed By:** Droid (Factory AI)  
 **Type:** Number Formatting Enhancement  
