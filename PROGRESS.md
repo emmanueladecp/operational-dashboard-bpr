@@ -53,6 +53,67 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-21 - Fix Stock Detail Dialog Unit Conversion
+**Changed By:** Droid (Factory AI)  
+**Type:** Bug Fix - Unit Conversion  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Fixed KG to Ton conversion in stock detail dialog
+
+**Description:**
+Fixed critical bug where stock detail dialog displayed quantities in Kilograms while showing "Ton" as the unit label. Now all quantities are properly converted from KG to Tons with consistent 1 decimal formatting.
+
+**Changes Made:**
+
+**1. Total Quantity Conversion (Line 2578):**
+- **Before**: `filteredAndSortedProducts.reduce((sum, item) => sum + Number(item.sumqtyonhand), 0).toLocaleString('id-ID')`
+- **After**: `(filteredAndSortedProducts.reduce((sum, item) => sum + Number(item.sumqtyonhand), 0) / 1000).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })`
+- Added division by 1000 to convert KG to Ton
+- Applied 1 decimal formatting for consistency
+
+**2. Detail Product Quantity Conversion (Line 2664):**
+- **Before**: `Number(product.sumqtyonhand).toLocaleString('id-ID')} {product.uom_name`
+- **After**: `(Number(product.sumqtyonhand) / 1000).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Ton`
+- Converted individual product quantities from KG to Ton
+- Replaced variable unit `uom_name` with hardcoded "Ton"
+- Applied 1 decimal formatting
+
+**Bug Impact:**
+- **Before Fix**: Displayed "1,234.5 Ton" when actual value was 1,234.5 KG (should be 1.2 Ton)
+- **After Fix**: Correctly displays "1.2 Ton" for 1,234.5 KG
+
+**Example:**
+```
+Before:
+Total Quantity: 1,234,500 Ton  ❌ (was actually KG)
+Product A: 500,000 kg           ❌ (wrong unit)
+
+After:
+Total Quantity: 1,234.5 Ton    ✅ (converted correctly)
+Product A: 500.0 Ton            ✅ (converted correctly)
+```
+
+**Benefits:**
+- **Data Accuracy**: Values now match the unit labels
+- **Consistency**: All stock displays now use Ton as standard unit
+- **User Trust**: Eliminates confusion from incorrect unit conversion
+- **Reporting**: Accurate data for decision making
+
+**Technical Details:**
+- Conversion formula: `(valueInKG / 1000)` = valueInTon
+- Formatting: Indonesian locale with 1 decimal point
+- Applied to both summary and detail sections
+- All stock types affected: BB (Raw Material), Broken, and FG (Finished Goods)
+- Verified build success with no errors
+
+**Testing Checklist:**
+- ✅ Total Quantity displays correct Ton values
+- ✅ Individual product quantities converted properly
+- ✅ 1 decimal formatting applied consistently
+- ✅ All stock types (BB, Broken, FG) working correctly
+- ✅ No console errors or warnings
+
+---
+
 ### 2025-11-21 - Integrate Vercel Speed Insights
 **Changed By:** Droid (Factory AI)  
 **Type:** Performance Monitoring Integration  

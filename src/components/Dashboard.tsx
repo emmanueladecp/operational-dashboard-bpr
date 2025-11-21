@@ -2575,7 +2575,7 @@ export default function Dashboard() {
                        <div className="space-y-1">
                          <Label className="text-xs sm:text-sm font-medium text-gray-600">Total Quantity</Label>
                          <p className="font-bold text-lg sm:text-xl lg:text-2xl text-green-800 break-words">
-                           {isLoadingDetailedStock ? '...' : `${filteredAndSortedProducts.reduce((sum, item) => sum + Number(item.sumqtyonhand), 0).toLocaleString('id-ID')} ${selectedStockItem.unit}`}
+                           {isLoadingDetailedStock ? '...' : `${(filteredAndSortedProducts.reduce((sum, item) => sum + Number(item.sumqtyonhand), 0) / 1000).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ${selectedStockItem.unit}`}
                          </p>
                        </div>
                      </div>
@@ -2661,7 +2661,7 @@ export default function Dashboard() {
                                  <div className="text-left sm:text-right lg:text-right">
                                    <Label className="text-xs font-medium text-gray-500 block">Stok</Label>
                                    <p className="font-bold text-sm sm:text-base text-green-800 mt-1">
-                                     {Number(product.sumqtyonhand).toLocaleString('id-ID')} {product.uom_name}
+                                     {(Number(product.sumqtyonhand) / 1000).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Ton
                                    </p>
                                  </div>
                                </div>
