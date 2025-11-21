@@ -53,6 +53,71 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-21 - Add Percentage Display to BB vs Broken Comparison
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Enhancement - Data Visualization  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Added percentage calculations and display
+
+**Description:**
+Added percentage display for Stok BB (Bahan Baku) and Stok Broken in the Perbandingan Stok BB vs Broken card, showing the proportion of each stock type relative to the total.
+
+**Changes Made:**
+
+**1. Percentage Calculation:**
+- **Stok BB %** = (Stok BB / (Stok BB + Stok Broken)) × 100%
+- **Stok Broken %** = (Stok Broken / (Stok BB + Stok Broken)) × 100%
+- Both percentages formatted with 1 decimal point using `toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })`
+
+**2. UI Updates:**
+- Wrapped stock values in `<div className="text-right">` for better alignment
+- Added percentage display below each stock value
+- Used matching color scheme: `text-green-600` for BB, `text-amber-600` for Broken
+- Small font size (`text-sm`) with margin-top for visual hierarchy
+
+**Before:**
+```jsx
+<span className="text-xl font-bold text-green-700">
+  123,4 Ton
+</span>
+```
+
+**After:**
+```jsx
+<div className="text-right">
+  <span className="text-xl font-bold text-green-700">
+    123,4 Ton
+  </span>
+  <p className="text-sm text-green-600 mt-1">
+    (85,6%)
+  </p>
+</div>
+```
+
+**Example Output:**
+```
+Stok BB (Bahan Baku): 850,5 Ton
+                      (85,6%)
+
+Stok Broken:          143,2 Ton
+                      (14,4%)
+```
+
+**Benefits:**
+- **Better Insights**: Users can instantly see the proportion of each stock type
+- **Data Context**: Percentages provide relative context to absolute values
+- **Quick Analysis**: Easy to identify stock distribution at a glance
+- **Consistent Formatting**: 1 decimal point matches other numerical displays
+
+**Technical Details:**
+- Calculation: `(value / (totalBB + totalBroken)) * 100`
+- Formatting: Indonesian locale with 1 decimal point
+- Color-coded: Green for BB, Amber for Broken
+- Responsive layout maintained with text-right alignment
+- Verified build success with no errors
+
+---
+
 ### 2025-11-21 - Fix Level Stok Broken Tab Caption Styling
 **Changed By:** Droid (Factory AI)  
 **Type:** UI/UX Enhancement - Tab Styling Fix  

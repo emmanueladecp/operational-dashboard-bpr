@@ -1451,9 +1451,14 @@ export default function Dashboard() {
                     <Sprout className="w-5 h-5 text-green-600" />
                     <span className="font-semibold text-gray-700">Stok BB (Bahan Baku)</span>
                   </div>
-                  <span className="text-xl font-bold text-green-700">
-                    {totalStockBB.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Ton
-                  </span>
+                  <div className="text-right">
+                    <span className="text-xl font-bold text-green-700">
+                      {totalStockBB.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Ton
+                    </span>
+                    <p className="text-sm text-green-600 mt-1">
+                      ({((totalStockBB / (totalStockBB + totalStockBroken)) * 100).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)
+                    </p>
+                  </div>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
                   <div 
@@ -1470,9 +1475,14 @@ export default function Dashboard() {
                     <Package className="w-5 h-5 text-amber-600" />
                     <span className="font-semibold text-gray-700">Stok Broken</span>
                   </div>
-                  <span className="text-xl font-bold text-amber-700">
-                    {totalStockBroken.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Ton
-                  </span>
+                  <div className="text-right">
+                    <span className="text-xl font-bold text-amber-700">
+                      {totalStockBroken.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Ton
+                    </span>
+                    <p className="text-sm text-amber-600 mt-1">
+                      ({((totalStockBroken / (totalStockBB + totalStockBroken)) * 100).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)
+                    </p>
+                  </div>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
                   <div 
