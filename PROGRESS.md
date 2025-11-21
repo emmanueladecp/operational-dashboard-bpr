@@ -53,6 +53,50 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-21 - Apply 1 Decimal Point Rounding to Production Recap Components
+**Changed By:** Droid (Factory AI)  
+**Type:** Number Formatting Enhancement  
+**Files Modified:**
+- ✅ Modified `src/components/ProductionRecap.tsx` - Updated formatNumber to use 1 decimal point
+- ✅ Modified `src/components/ProductionRecapGabah.tsx` - Updated formatNumber to use 1 decimal point
+
+**Description:**
+Applied consistent 1 decimal point rounding to FG (Finished Goods) and Gabah production recap components to match the formatting standard used across the dashboard.
+
+**Changes Made:**
+
+**1. ProductionRecap.tsx (FG Production):**
+- Updated `formatNumber` function from `maximumFractionDigits: 2` to `minimumFractionDigits: 1, maximumFractionDigits: 1`
+- Changed null/undefined return value from `'0'` to `'0,0'` for consistency
+
+**2. ProductionRecapGabah.tsx (Gabah Production):**
+- Updated `formatNumber` function from `maximumFractionDigits: 2` to `minimumFractionDigits: 1, maximumFractionDigits: 1`
+- Changed null/undefined return value from `'0'` to `'0,0'` for consistency
+
+**Before:**
+```
+Total Produksi: 123,45 TON
+Turunan Beras: 12,3 TON
+```
+
+**After:**
+```
+Total Produksi: 123,5 TON
+Turunan Beras: 12,3 TON
+```
+
+**Benefits:**
+- **Consistency**: All production metrics now use same 1 decimal formatting
+- **Readability**: Cleaner display with predictable decimal places
+- **User Experience**: Consistent number formatting across all dashboard components
+
+**Technical Details:**
+- Function signature: `toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })`
+- Applies to all TON quantities displayed in production recap cards
+- Verified build success with no errors
+
+---
+
 ### 2025-11-21 - Convert Level Stok FG from Kilograms to Tons
 **Changed By:** Droid (Factory AI)  
 **Type:** Unit Conversion & Enhancement  

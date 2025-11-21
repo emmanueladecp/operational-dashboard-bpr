@@ -221,9 +221,9 @@ export default function ProductionRecapGabah({
   // Format number with locale
   const formatNumber = (num: number | undefined | null) => {
     if (num === undefined || num === null || isNaN(num)) {
-      return '0';
+      return '0,0';
     }
-    return num.toLocaleString('id-ID', { maximumFractionDigits: 2 });
+    return num.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   };
 
   return (
