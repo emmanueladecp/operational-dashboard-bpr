@@ -1452,7 +1452,7 @@ export default function Dashboard() {
                     <span className="font-semibold text-gray-700">Stok BB (Bahan Baku)</span>
                   </div>
                   <span className="text-xl font-bold text-green-700">
-                    {(totalStockBB / 1000).toLocaleString('id-ID', { maximumFractionDigits: 1 })} Ton
+                    {(totalStockBB / 1000).toLocaleString('id-ID', { maximumFractionDigits: 0 })} Ton
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
@@ -1471,7 +1471,7 @@ export default function Dashboard() {
                     <span className="font-semibold text-gray-700">Stok Broken</span>
                   </div>
                   <span className="text-xl font-bold text-amber-700">
-                    {(totalStockBroken / 1000).toLocaleString('id-ID', { maximumFractionDigits: 1 })} Ton
+                    {(totalStockBroken / 1000).toLocaleString('id-ID', { maximumFractionDigits: 0 })} Ton
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">

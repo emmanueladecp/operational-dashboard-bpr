@@ -53,6 +53,38 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-21 - Apply Default Rounding to BB vs Broken Comparison Card
+**Changed By:** Droid (Factory AI)  
+**Type:** UI Enhancement  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Applied rounding to comparison card values
+
+**Description:**
+Applied default rounding (`maximumFractionDigits: 0`) to both Stok BB and Stok Broken values in the "Perbandingan Stok BB vs Broken" comparison card, changing from 1 decimal place to whole numbers for consistency.
+
+**Changes Made:**
+
+**1. Stok BB Value:**
+- Changed from `maximumFractionDigits: 1` to `0`
+- Before: "125.5 Ton" → After: "126 Ton"
+
+**2. Stok Broken Value:**
+- Changed from `maximumFractionDigits: 1` to `0`
+- Before: "10.3 Ton" → After: "10 Ton"
+
+**Benefits:**
+- Consistent rounding across all dashboard metrics
+- Cleaner display in comparison card
+- Better alignment with Quick Stats formatting
+- Improved readability
+
+**Verification:**
+- ✅ Build succeeds without errors
+- ✅ Both values now display whole numbers
+- ✅ Progress bars remain functional
+
+---
+
 ### 2025-11-21 - Apply Default Rounding to Quick Stats Metrics
 **Changed By:** Droid (Factory AI)  
 **Type:** UI Enhancement  
