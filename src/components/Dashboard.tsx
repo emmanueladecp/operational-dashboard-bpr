@@ -1492,6 +1492,9 @@ export default function Dashboard() {
               <TabsTrigger value="stocks-bb" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
                 Level Stok BB
               </TabsTrigger>
+              <TabsTrigger value="stocks-broken" className="data-[state=active]:bg-amber-600 data-[state=active]:text-white px-3 py-2">
+                Level Stok Broken
+              </TabsTrigger>
               <TabsTrigger value="stocks-fg" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
                 Level Stok FG
               </TabsTrigger>
@@ -1613,40 +1616,93 @@ export default function Dashboard() {
                         ))}
                       </div>
                     )}
+                  </div>
+                )}
+              </div>
+            </Card>
+          </TabsContent>
 
-                    {/* Broken Section */}
-                    {processedStockDataBroken.length > 0 && (
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 mb-4">
-                          <div className="h-1 flex-1 bg-amber-200 rounded"></div>
-                          <h4 className="text-sm font-semibold text-amber-800 px-3 py-1 bg-amber-100 rounded-full">
-                            BROKEN
-                          </h4>
-                          <div className="h-1 flex-1 bg-amber-200 rounded"></div>
-                        </div>
-                        {processedStockDataBroken.map((item, index) => (
-                          <div
-                            key={`broken-${index}`}
-                            className="p-4 bg-amber-50 rounded-lg border border-amber-100 cursor-pointer hover:bg-amber-100 transition-colors"
-                            onClick={() => handleStockItemClick(item, "BROKEN")}
-                          >
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-                              <div className="flex-1">
-                                <h4 className="font-medium text-amber-800">{item.category}</h4>
-                                <div className="flex flex-wrap gap-2 mt-1">
-                                  <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">
-                                    {item.location}
-                                  </Badge>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <p className="font-bold text-amber-800">{item.quantity.toLocaleString('id-ID', { maximumFractionDigits: 0 })} {item.unit}</p>
-                              </div>
-                            </div>
+          {/* Level Stok Broken Tab */}
+          <TabsContent value="stocks-broken" className="space-y-4">
+            <Card className="border-amber-200">
+              <div className="p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-2 sm:space-y-0">
+                  <h3 className="text-lg font-semibold text-amber-800">Level Stok Broken</h3>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <Label className="text-sm text-amber-700 mr-2">Filter Lokasi:</Label>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="all-locations-broken"
+                          checked={locationFilter.includes('all')}
+                          onCheckedChange={(checked: boolean) => {
+                            if (checked) {
+                              setLocationFilter(['all']);
+                            } else if (locationFilter.length === 1) {
+                              setLocationFilter([]);
+                            }
+                          }}
+                        />
+                        <Label htmlFor="all-locations-broken" className="text-sm text-amber-700">
+                          Semua Lokasi
+                        </Label>
+                      </div>
+                      <div className="flex flex-wrap gap-2 ml-2">
+                        {allLocations.filter(location => location.is_active).sort((a, b) => a.name.localeCompare(b.name)).map((location) => (
+                          <div key={location.id} className="flex items-center space-x-1">
+                            <Checkbox
+                              id={`location-broken-${location.id}`}
+                              checked={locationFilter.includes(location.name)}
+                              onCheckedChange={(checked: boolean) => {
+                                if (checked) {
+                                  if (locationFilter.includes('all')) {
+                                    setLocationFilter([location.name]);
+                                  } else {
+                                    setLocationFilter(prev => [...prev.filter(l => l !== 'all'), location.name]);
+                                  }
+                                } else {
+                                  setLocationFilter(prev => prev.filter(l => l !== location.name));
+                                }
+                              }}
+                            />
+                            <Label htmlFor={`location-broken-${location.id}`} className="text-xs text-amber-700">
+                              {location.name}
+                            </Label>
                           </div>
                         ))}
                       </div>
-                    )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stock List */}
+                {isLoadingStock ? (
+                  <div className="text-center py-8 text-amber-600">Memuat data stok...</div>
+                ) : processedStockDataBroken.length === 0 ? (
+                  <div className="text-center py-8 text-amber-600">Tidak ada data stok broken untuk lokasi Anda</div>
+                ) : (
+                  <div className="space-y-3">
+                    {processedStockDataBroken.map((item, index) => (
+                      <div
+                        key={`broken-${index}`}
+                        className="p-4 bg-amber-50 rounded-lg border border-amber-100 cursor-pointer hover:bg-amber-100 transition-colors"
+                        onClick={() => handleStockItemClick(item, "BROKEN")}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-amber-800">{item.category}</h4>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">
+                                {item.location}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-amber-800">{item.quantity.toLocaleString('id-ID', { maximumFractionDigits: 0 })} {item.unit}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

@@ -53,6 +53,94 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-21 - Separate Level Stok Broken into Independent Tab
+**Changed By:** Droid (Factory AI)  
+**Type:** UI/UX Enhancement & Bug Fix  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Separated BROKEN section into new tab
+
+**Description:**
+Fixed calculation discrepancy by separating BROKEN products into their own independent tab, ensuring Total Stok BB accurately reflects only RAW MATERIAL data. This resolves user confusion where Level Stok BB tab showed both RAW MATERIAL and BROKEN products, but Total Stok BB card only counted RAW MATERIAL.
+
+**Changes Made:**
+
+**1. New Tab Created:**
+- ✅ Added "Level Stok Broken" tab button (amber theme for consistency)
+- ✅ Positioned between "Level Stok BB" and "Level Stok FG" tabs
+- ✅ Uses amber color scheme to match BROKEN product branding
+
+**2. Tab Structure:**
+```
+BEFORE:
+┌─────────────────────────────────────────┐
+│ [Level Stok BB] [Level Stok FG] ...    │
+└─────────────────────────────────────────┘
+  Content:
+  - RAW MATERIAL section
+  - BROKEN section (mixed in)
+
+AFTER:
+┌──────────────────────────────────────────────┐
+│ [Level Stok BB] [Level Stok Broken] [FG]... │
+└──────────────────────────────────────────────┘
+  Level Stok BB:
+  - RAW MATERIAL only
+  
+  Level Stok Broken:
+  - BROKEN products only
+```
+
+**3. Level Stok BB Tab:**
+- ❌ Removed BROKEN section entirely
+- ✅ Now shows only RAW MATERIAL products
+- ✅ Total matches sum of displayed items
+
+**4. Level Stok Broken Tab:**
+- ✅ Complete new tab with amber theme
+- ✅ Location filter (same functionality as other tabs)
+- ✅ Shows all BROKEN products
+- ✅ Total Stok Broken card matches sum of tab items
+- ✅ Click item for detail modal
+
+**Problem Solved:**
+```
+BEFORE (Confusing):
+- Total Stok BB Card: 213 Ton (RAW MATERIAL only)
+- Level Stok BB Tab Detail: 213 Ton (RAW) + 18 Ton (BROKEN) = 231 Ton
+- ❌ Numbers don't match!
+
+AFTER (Clear):
+- Total Stok BB Card: 213 Ton
+- Level Stok BB Tab: 213 Ton (RAW MATERIAL only)
+- ✅ Numbers match!
+
+- Total Stok Broken Card: 18 Ton
+- Level Stok Broken Tab: 18 Ton (BROKEN only)
+- ✅ Numbers match!
+```
+
+**Benefits:**
+- Eliminates calculation confusion
+- Clear separation of product types
+- Total cards accurately reflect tab detail sums
+- Better user experience
+- Consistent with dashboard design (separate tabs for different data)
+- Easier navigation and filtering
+
+**Affected Components:**
+- ✅ Tab navigation bar (added new tab button)
+- ✅ Level Stok BB tab content (removed BROKEN section)
+- ✅ New Level Stok Broken tab content (complete new implementation)
+
+**Verification:**
+- ✅ Build succeeds without errors
+- ✅ Total Stok BB = Sum of Level Stok BB tab items
+- ✅ Total Stok Broken = Sum of Level Stok Broken tab items
+- ✅ Location filters work on both tabs
+- ✅ Detail modals work correctly
+
+---
+
 ### 2025-11-21 - Convert Level Stok BB Detail from Kilograms to Tons
 **Changed By:** Droid (Factory AI)  
 **Type:** Unit Conversion & Enhancement  
