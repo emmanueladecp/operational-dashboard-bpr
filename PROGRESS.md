@@ -2,7 +2,7 @@
 
 **Project Progress Tracker**  
 PT. Belitang Panen Raya - Operational Dashboard v1.0  
-Last Updated: 2025-11-20
+Last Updated: 2025-11-21
 
 ---
 
@@ -52,6 +52,51 @@ None currently tracked
 ---
 
 ## Recent Changes
+
+### 2025-11-21 - Apply Default Rounding to Quick Stats Metrics
+**Changed By:** Droid (Factory AI)  
+**Type:** UI Enhancement  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Applied rounding to 5 Quick Stats cards
+
+**Description:**
+Applied default rounding (`maximumFractionDigits: 0`) to all stock and transaction metrics in Quick Stats section to display whole numbers without decimal places, improving readability and consistency.
+
+**Changes Made:**
+
+**1. Stock Metrics Rounded (3 cards):**
+- **Total Stok BB**: Added `{ maximumFractionDigits: 0 }` to toLocaleString
+- **Total Stok Broken**: Added `{ maximumFractionDigits: 0 }` to toLocaleString
+- **Total Stok FG**: Added `{ maximumFractionDigits: 0 }` to toLocaleString
+
+**2. Transaction Metrics Rounded (2 cards):**
+- **Total Penjualan**: Changed from `maximumFractionDigits: 2` to `0`
+- **Total Pembelian**: Changed from `maximumFractionDigits: 2` to `0`
+
+**Before:**
+```
+Total Stok BB: 1,234.56 Ton
+Total Penjualan: 567.89 Ton
+```
+
+**After:**
+```
+Total Stok BB: 1,235 Ton
+Total Penjualan: 568 Ton
+```
+
+**Benefits:**
+- Cleaner, more readable display
+- Consistent number formatting across all metrics
+- Removes unnecessary decimal precision for tonnage values
+- Better at-a-glance comprehension
+
+**Verification:**
+- ✅ All 5 metrics now display whole numbers
+- ✅ Indonesian number formatting (id-ID) maintained
+- ✅ Responsive layout unchanged
+
+---
 
 ### 2025-11-20 - Simplify BB vs Broken Comparison Card Layout
 **Changed By:** Droid (Factory AI)  
