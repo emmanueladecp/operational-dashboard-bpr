@@ -684,13 +684,13 @@ export default function Dashboard() {
       const quantity = Number(item.sumqtyonhand);
 
       if (aggregatedMap.has(key)) {
-        aggregatedMap.get(key).quantity += quantity;
+        aggregatedMap.get(key).quantity += quantity / 1000; // Convert kg to Ton
       } else {
         aggregatedMap.set(key, {
           category: item.product_category_name,
           location: item.location,
-          quantity: quantity,
-          unit: item.uom_name
+          quantity: quantity / 1000, // Convert kg to Ton
+          unit: 'Ton'
         });
       }
     });
@@ -1376,7 +1376,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-green-600 mb-1">Total Stok FG</p>
-                <p className="text-2xl font-bold text-green-800">{( totalStockFG / 1000).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Ton</p>
+                <p className="text-2xl font-bold text-green-800">{totalStockFG.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Ton</p>
               </div>
               <Wheat className="w-8 h-8 text-green-600" />
             </div>
@@ -1785,7 +1785,7 @@ export default function Dashboard() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-bold text-blue-800">{item.quantity.toLocaleString('id-ID')} {item.unit}</p>
+                            <p className="font-bold text-blue-800">{item.quantity.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} {item.unit}</p>
                           </div>
                         </div>
                       </div>

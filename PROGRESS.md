@@ -53,6 +53,70 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-21 - Convert Level Stok FG from Kilograms to Tons
+**Changed By:** Droid (Factory AI)  
+**Type:** Unit Conversion & Enhancement  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Converted FG stock data from kg to Tons
+
+**Description:**
+Converted Level Stok FG (Finished Goods) from Kilograms to Tons with 1 decimal point rounding, completing the unit standardization across all stock types (BB, Broken, and FG now all use Tons).
+
+**Changes Made:**
+
+**1. Data Processing Updates:**
+- **FG aggregation**: Convert quantity from kg to Tons by dividing by 1000
+- Changed unit display from `item.uom_name` to hardcoded `'Ton'`
+- Updated in `processedStockDataFG` logic
+
+**2. Display Formatting:**
+- Applied `minimumFractionDigits: 1, maximumFractionDigits: 1` to FG detail quantities
+- Example: "1,234 kg" → "1,2 Ton"
+
+**3. Total Calculations Updated:**
+- Removed `/1000` division from Total Stok FG display (already in Tons from aggregation)
+- Updated Quick Stats card to display direct value
+
+**Before:**
+```
+Level Stok FG Detail:
+- Beras Premium: 156,789 kg
+- Beras Medium: 98,456 kg
+
+Quick Stats:
+- Total Stok FG: 255,2 Ton (calculated from 255,245 kg)
+```
+
+**After:**
+```
+Level Stok FG Detail:
+- Beras Premium: 156,8 Ton
+- Beras Medium: 98,5 Ton
+
+Quick Stats:
+- Total Stok FG: 255,2 Ton (sum of detail values)
+```
+
+**Benefits:**
+- Complete unit consistency (BB, Broken, FG all in Tons)
+- Cleaner detail view with rounded values
+- Better alignment between detail and summary data
+- Eliminates confusion between kg and Ton displays
+- Standard 1 decimal point across all stock types
+
+**Affected Components:**
+- ✅ Level Stok FG tab (all detail items)
+- ✅ Quick Stats - Total Stok FG card
+- ✅ processedStockDataFG aggregation logic
+
+**Verification:**
+- ✅ Build succeeds without errors
+- ✅ All FG quantities display as Tons with 1 decimal
+- ✅ Total Stok FG matches sum of FG detail values
+- ✅ Unit consistency maintained throughout
+
+---
+
 ### 2025-11-21 - Change Number Formatting to 1 Decimal Point
 **Changed By:** Droid (Factory AI)  
 **Type:** UI Enhancement  
