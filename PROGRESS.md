@@ -53,6 +53,50 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-21 - Fix Level Stok Broken Tab Caption Styling
+**Changed By:** Droid (Factory AI)  
+**Type:** UI/UX Enhancement - Tab Styling Fix  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Changed tab caption color from amber to green
+
+**Description:**
+Fixed Level Stok Broken tab caption styling to match other tabs. Changed active state background color from amber to green for visual consistency across all navigation tabs.
+
+**Changes Made:**
+
+**1. TabsTrigger Color Update:**
+- Changed `data-[state=active]:bg-amber-600` to `data-[state=active]:bg-green-600`
+- Maintained `data-[state=active]:text-white` for consistency
+- Now all tabs use the same green color scheme when active
+
+**Before:**
+```jsx
+<TabsTrigger value="stocks-broken" className="data-[state=active]:bg-amber-600 data-[state=active]:text-white px-3 py-2">
+  Level Stok Broken
+</TabsTrigger>
+```
+
+**After:**
+```jsx
+<TabsTrigger value="stocks-broken" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
+  Level Stok Broken
+</TabsTrigger>
+```
+
+**Benefits:**
+- **Visual Consistency**: All tabs now use uniform green color scheme when active
+- **Better UX**: Predictable tab behavior across navigation
+- **Professional Look**: Unified design language for all navigation elements
+- **Reduced Confusion**: Same color pattern eliminates visual inconsistency
+
+**Technical Details:**
+- All tabs now use `bg-green-600` for active state
+- White text (`text-white`) maintained for readability
+- TabsList background remains `bg-green-100` for contrast
+- Verified build success with no errors
+
+---
+
 ### 2025-11-21 - Fix Level Stok Broken Styling Consistency
 **Changed By:** Droid (Factory AI)  
 **Type:** UI/UX Enhancement - Styling Fix  

@@ -1492,7 +1492,7 @@ export default function Dashboard() {
               <TabsTrigger value="stocks-bb" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
                 Level Stok BB
               </TabsTrigger>
-              <TabsTrigger value="stocks-broken" className="data-[state=active]:bg-amber-600 data-[state=active]:text-white px-3 py-2">
+              <TabsTrigger value="stocks-broken" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
                 Level Stok Broken
               </TabsTrigger>
               <TabsTrigger value="stocks-fg" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-3 py-2">
