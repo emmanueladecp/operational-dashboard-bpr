@@ -53,6 +53,65 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-21 - Change Number Formatting to 1 Decimal Point
+**Changed By:** Droid (Factory AI)  
+**Type:** UI Enhancement  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Updated all number formatting to 1 decimal point
+
+**Description:**
+Changed all stock, sales, and purchase number displays from whole numbers (0 decimals) to 1 decimal point precision for better accuracy and consistency across the dashboard.
+
+**Changes Made:**
+
+**1. Quick Stats Cards (5 cards):**
+- ✅ Total Stok BB: `maximumFractionDigits: 0` → `minimumFractionDigits: 1, maximumFractionDigits: 1`
+- ✅ Total Stok Broken: `maximumFractionDigits: 0` → `minimumFractionDigits: 1, maximumFractionDigits: 1`
+- ✅ Total Stok FG: `maximumFractionDigits: 0` → `minimumFractionDigits: 1, maximumFractionDigits: 1`
+- ✅ Total Penjualan: `maximumFractionDigits: 0` → `minimumFractionDigits: 1, maximumFractionDigits: 1`
+- ✅ Total Pembelian: `maximumFractionDigits: 0` → `minimumFractionDigits: 1, maximumFractionDigits: 1`
+
+**2. BB vs Broken Comparison Card:**
+- ✅ Stok BB value: `maximumFractionDigits: 0` → `minimumFractionDigits: 1, maximumFractionDigits: 1`
+- ✅ Stok Broken value: `maximumFractionDigits: 0` → `minimumFractionDigits: 1, maximumFractionDigits: 1`
+
+**3. Detail Displays:**
+- ✅ Level Stok BB tab (RAW MATERIAL items): 1 decimal point
+- ✅ Level Stok Broken tab (BROKEN items): 1 decimal point
+
+**Before:**
+```
+Total Stok BB: 213 Ton
+Total Stok Broken: 18 Ton
+Detail Item: 125 Ton
+```
+
+**After:**
+```
+Total Stok BB: 213,0 Ton
+Total Stok Broken: 18,5 Ton
+Detail Item: 125,4 Ton
+```
+
+**Benefits:**
+- More accurate representation of stock values
+- Consistent decimal formatting across all metrics
+- Better precision for inventory tracking
+- Maintains Indonesian number format (comma as decimal separator)
+
+**Affected Components:**
+- ✅ 5 Quick Stats cards
+- ✅ BB vs Broken comparison card (2 values)
+- ✅ Level Stok BB detail items
+- ✅ Level Stok Broken detail items
+
+**Verification:**
+- ✅ Build succeeds without errors
+- ✅ All values show exactly 1 decimal point
+- ✅ Indonesian locale formatting maintained (213,5 instead of 213.5)
+
+---
+
 ### 2025-11-21 - Separate Level Stok Broken into Independent Tab
 **Changed By:** Droid (Factory AI)  
 **Type:** UI/UX Enhancement & Bug Fix  

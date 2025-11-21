@@ -1358,7 +1358,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-green-600 mb-1">Total Stok BB</p>
-                <p className="text-2xl font-bold text-green-800">{totalStockBB.toLocaleString('id-ID', { maximumFractionDigits: 0 })} Ton</p>
+                <p className="text-2xl font-bold text-green-800">{totalStockBB.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Ton</p>
               </div>
               <Sprout className="w-8 h-8 text-green-600" />
             </div>
@@ -1367,7 +1367,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-green-600 mb-1">Total Stok Broken</p>
-                <p className="text-2xl font-bold text-green-800">{totalStockBroken.toLocaleString('id-ID', { maximumFractionDigits: 0 })} Ton</p>
+                <p className="text-2xl font-bold text-green-800">{totalStockBroken.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Ton</p>
               </div>
               <Package className="w-8 h-8 text-green-600" />
             </div>
@@ -1376,7 +1376,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-green-600 mb-1">Total Stok FG</p>
-                <p className="text-2xl font-bold text-green-800">{( totalStockFG / 1000).toLocaleString('id-ID', { maximumFractionDigits: 0 })} Ton</p>
+                <p className="text-2xl font-bold text-green-800">{( totalStockFG / 1000).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Ton</p>
               </div>
               <Wheat className="w-8 h-8 text-green-600" />
             </div>
@@ -1386,7 +1386,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm text-green-600 mb-1">Total Penjualan</p>
                 <p className="text-2xl font-bold text-green-800">
-                  {(totalSalesFromSummary / 1000).toLocaleString('id-ID', { maximumFractionDigits: 0 })} Ton
+                  {(totalSalesFromSummary / 1000).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Ton
                 </p>
                 <p className="text-xs text-green-500 mt-1">
                   {selectedPeriodRange} bulan terakhir
@@ -1401,7 +1401,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm text-green-600 mb-1">Total Pembelian</p>
                 <p className="text-2xl font-bold text-green-800">
-                  {(totalPembelianFromData / 1000).toLocaleString('id-ID', { maximumFractionDigits: 0 })} Ton
+                  {(totalPembelianFromData / 1000).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Ton
                 </p>
                 <p className="text-xs text-green-500 mt-1">
                   {selectedPembelianPeriodRange} bulan terakhir
@@ -1452,7 +1452,7 @@ export default function Dashboard() {
                     <span className="font-semibold text-gray-700">Stok BB (Bahan Baku)</span>
                   </div>
                   <span className="text-xl font-bold text-green-700">
-                    {totalStockBB.toLocaleString('id-ID', { maximumFractionDigits: 0 })} Ton
+                    {totalStockBB.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Ton
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
@@ -1471,7 +1471,7 @@ export default function Dashboard() {
                     <span className="font-semibold text-gray-700">Stok Broken</span>
                   </div>
                   <span className="text-xl font-bold text-amber-700">
-                    {totalStockBroken.toLocaleString('id-ID', { maximumFractionDigits: 0 })} Ton
+                    {totalStockBroken.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Ton
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
@@ -1609,7 +1609,7 @@ export default function Dashboard() {
                                 </div>
                               </div>
                               <div className="text-right">
-                                <p className="font-bold text-green-800">{item.quantity.toLocaleString('id-ID', { maximumFractionDigits: 0 })} {item.unit}</p>
+                                <p className="font-bold text-green-800">{item.quantity.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} {item.unit}</p>
                               </div>
                             </div>
                           </div>
@@ -1698,7 +1698,7 @@ export default function Dashboard() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-bold text-amber-800">{item.quantity.toLocaleString('id-ID', { maximumFractionDigits: 0 })} {item.unit}</p>
+                            <p className="font-bold text-amber-800">{item.quantity.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} {item.unit}</p>
                           </div>
                         </div>
                       </div>
