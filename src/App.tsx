@@ -1,6 +1,7 @@
 import { SignedIn, SignedOut, useUser } from '@clerk/clerk-react';
 import { Suspense, lazy } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 // Lazy load components for better performance
 const Login = lazy(() => import('./components/Login'));
@@ -51,6 +52,7 @@ export default function App() {
             <Dashboard />
           </SignedIn>
         </Suspense>
+        <SpeedInsights />
       </div>
     </ErrorBoundary>
   );

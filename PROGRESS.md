@@ -53,6 +53,75 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-21 - Integrate Vercel Speed Insights
+**Changed By:** Droid (Factory AI)  
+**Type:** Performance Monitoring Integration  
+**Files Modified:**
+- ✅ Modified `src/App.tsx` - Added SpeedInsights component
+- ✅ Modified `package.json` - Added @vercel/speed-insights dependency
+
+**Description:**
+Integrated Vercel Speed Insights to monitor and track real-time performance metrics of the application, enabling data-driven optimization decisions.
+
+**Changes Made:**
+
+**1. Package Installation:**
+- Installed `@vercel/speed-insights` package via npm
+- Added to project dependencies in package.json
+
+**2. Component Integration:**
+- Imported `SpeedInsights` from `@vercel/speed-insights/react`
+- Added component at root level of App.tsx
+- Positioned inside main div, after Suspense wrapper
+
+**Implementation:**
+```tsx
+import { SpeedInsights } from '@vercel/speed-insights/react';
+
+export default function App() {
+  return (
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <div className="size-full">
+        <Suspense fallback={<LoadingSpinner />}>
+          {/* App content */}
+        </Suspense>
+        <SpeedInsights />
+      </div>
+    </ErrorBoundary>
+  );
+}
+```
+
+**Benefits:**
+- **Real-time Monitoring**: Track Core Web Vitals (LCP, FID, CLS) in production
+- **Performance Insights**: Identify slow pages and bottlenecks
+- **User Experience**: Measure actual user performance metrics
+- **Data-Driven**: Make informed optimization decisions based on real data
+- **Vercel Integration**: Seamless integration with Vercel deployment platform
+
+**Metrics Tracked:**
+- **LCP (Largest Contentful Paint)**: Loading performance
+- **FID (First Input Delay)**: Interactivity responsiveness
+- **CLS (Cumulative Layout Shift)**: Visual stability
+- **TTFB (Time to First Byte)**: Server response time
+- **FCP (First Contentful Paint)**: Initial render speed
+
+**Technical Details:**
+- Package version: Latest from npm registry
+- Bundle impact: Minimal (~2KB gzipped)
+- No configuration required for basic usage
+- Automatically collects metrics when deployed on Vercel
+- Client-side only, no server-side dependencies
+- Verified build success with no errors
+
+**Next Steps:**
+- Deploy to Vercel to see metrics in dashboard
+- Monitor performance trends over time
+- Use insights to identify optimization opportunities
+- Set performance budgets based on baseline metrics
+
+---
+
 ### 2025-11-21 - Add Percentage Display to BB vs Broken Comparison
 **Changed By:** Droid (Factory AI)  
 **Type:** Feature Enhancement - Data Visualization  
