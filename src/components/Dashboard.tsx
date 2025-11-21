@@ -592,12 +592,27 @@ export default function Dashboard() {
       }
     });
 
-    // Convert map to array and sort by location then category
+    // Convert map to array and sort by location then category with custom order
     return Array.from(aggregatedMap.values())
       .sort((a, b) => {
         if (a.location !== b.location) {
           return a.location.localeCompare(b.location);
         }
+        // Custom category order: GABAH first, then BERAS, then others alphabetically
+        const getCategoryOrder = (category: string) => {
+          const upperCategory = category.toUpperCase();
+          if (upperCategory.includes('GABAH')) return 1;
+          if (upperCategory.includes('BERAS')) return 2;
+          return 3;
+        };
+        
+        const orderA = getCategoryOrder(a.category);
+        const orderB = getCategoryOrder(b.category);
+        
+        if (orderA !== orderB) {
+          return orderA - orderB;
+        }
+        
         return a.category.localeCompare(b.category);
       });
   }, [stockData, userRole, currentUserLocations, locationFilter]);

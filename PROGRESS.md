@@ -53,6 +53,75 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-21 - Add Custom Sort Order for Level Stok BB
+**Changed By:** Droid (Factory AI)  
+**Type:** Feature Enhancement - Data Sorting  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Added custom sort order for BB categories
+
+**Description:**
+Implemented custom sorting logic for Level Stok BB (Bahan Baku) to display GABAH categories first, followed by BERAS, and then other categories alphabetically. This improves data readability and aligns with business workflow where raw material (GABAH) processing precedes rice (BERAS) production.
+
+**Changes Made:**
+
+**1. Custom Category Order Function:**
+```typescript
+const getCategoryOrder = (category: string) => {
+  const upperCategory = category.toUpperCase();
+  if (upperCategory.includes('GABAH')) return 1;  // First priority
+  if (upperCategory.includes('BERAS')) return 2;  // Second priority
+  return 3;                                       // Others alphabetically
+};
+```
+
+**2. Enhanced Sorting Logic:**
+- **Primary Sort**: By location (alphabetically)
+- **Secondary Sort**: By custom category order
+  - Priority 1: GABAH categories
+  - Priority 2: BERAS categories
+  - Priority 3: Other categories (alphabetically)
+- **Tertiary Sort**: Alphabetical within same priority
+
+**Before:**
+```
+Location A:
+  - BERAS PREMIUM
+  - BERAS ROJOLELE
+  - GABAH KERING
+  - GABAH BASAH
+```
+
+**After:**
+```
+Location A:
+  - GABAH KERING      ← Now appears first
+  - GABAH BASAH       ← GABAH categories grouped at top
+  - BERAS PREMIUM     ← BERAS categories follow
+  - BERAS ROJOLELE
+```
+
+**Benefits:**
+- **Logical Flow**: Matches production workflow (raw material → processed product)
+- **Better UX**: Users find GABAH (raw material) stock quickly
+- **Business Alignment**: Reflects actual processing sequence
+- **Consistency**: Predictable ordering across all locations
+
+**Technical Details:**
+- Implementation: Custom comparator function in `processedStockDataBB` useMemo
+- Case-insensitive matching using `toUpperCase()`
+- Substring matching with `includes()` for flexibility
+- Maintains location-based primary sorting
+- Applied only to Level Stok BB (Raw Materials)
+- No impact on Broken or FG sorting
+- Verified build success with no errors
+
+**Use Cases:**
+- Warehouse managers can quickly assess raw material (GABAH) availability
+- Production planning prioritizes GABAH stock checks
+- Inventory audits follow natural processing order
+
+---
+
 ### 2025-11-21 - Fix Stock Detail Dialog Unit Conversion
 **Changed By:** Droid (Factory AI)  
 **Type:** Bug Fix - Unit Conversion  
