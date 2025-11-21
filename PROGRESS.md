@@ -53,6 +53,75 @@ None currently tracked
 
 ## Recent Changes
 
+### 2025-11-21 - Convert Level Stok BB Detail from Kilograms to Tons
+**Changed By:** Droid (Factory AI)  
+**Type:** Unit Conversion & Enhancement  
+**Files Modified:**
+- ✅ Modified `src/components/Dashboard.tsx` - Converted stock data from kg to Tons
+
+**Description:**
+Converted all Level Stok BB detail information from Kilograms to Tons with default rounding, improving consistency across the dashboard. This affects both RAW MATERIAL and BROKEN product displays in the detail view.
+
+**Changes Made:**
+
+**1. Data Processing Updates:**
+- **RAW MATERIAL aggregation**: Convert quantity from kg to Tons by dividing by 1000
+- **BROKEN aggregation**: Convert quantity from kg to Tons by dividing by 1000
+- Changed unit display from `item.uom_name` to hardcoded `'Ton'`
+
+**2. Display Formatting:**
+- Applied `maximumFractionDigits: 0` to RAW MATERIAL detail quantities
+- Applied `maximumFractionDigits: 0` to BROKEN detail quantities
+- Example: "1,234 kg" → "1 Ton"
+
+**3. Total Calculations Updated:**
+- Removed `/1000` division from Total Stok BB displays (already in Tons)
+- Removed `/1000` division from Total Stok Broken displays (already in Tons)
+- Updated Quick Stats cards display logic
+- Updated BB vs Broken comparison card display logic
+
+**Before:**
+```
+Level Stok BB Detail:
+- Gabah Super: 125,450 kg
+- Gabah Medium: 87,230 kg
+
+Quick Stats:
+- Total Stok BB: 213 Ton (calculated from 212,680 kg)
+```
+
+**After:**
+```
+Level Stok BB Detail:
+- Gabah Super: 125 Ton
+- Gabah Medium: 87 Ton
+
+Quick Stats:
+- Total Stok BB: 213 Ton (sum of detail values)
+```
+
+**Benefits:**
+- Consistent unit display (Tons) across all views
+- Cleaner detail view with rounded values
+- Better alignment between detail and summary data
+- Eliminates confusion between kg and Ton displays
+- Improved readability
+
+**Affected Components:**
+- ✅ Level Stok BB tab (RAW MATERIAL section)
+- ✅ Level Stok BB tab (BROKEN section)
+- ✅ Quick Stats - Total Stok BB card
+- ✅ Quick Stats - Total Stok Broken card
+- ✅ BB vs Broken comparison card
+
+**Verification:**
+- ✅ Build succeeds without errors
+- ✅ All detail quantities display as whole Tons
+- ✅ Totals match sum of detail values
+- ✅ Unit consistency maintained throughout
+
+---
+
 ### 2025-11-21 - Apply Default Rounding to BB vs Broken Comparison Card
 **Changed By:** Droid (Factory AI)  
 **Type:** UI Enhancement  
