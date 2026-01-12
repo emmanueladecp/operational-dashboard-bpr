@@ -33,7 +33,7 @@ const clearServiceWorkerCache = async () => {
 
       const messageChannel = new MessageChannel();
 
-      messageChannel.port1.onmessage = function(event) {
+      messageChannel.port1.onmessage = function (event) {
         clearTimeout(timeout); // Clear timeout on successful response
 
         if (event.data && event.data.type === 'CACHE_CLEARED') {
@@ -49,7 +49,7 @@ const clearServiceWorkerCache = async () => {
         }
       };
 
-      messageChannel.port1.onmessageerror = function(error) {
+      messageChannel.port1.onmessageerror = function (error) {
         clearTimeout(timeout); // Clear timeout on error
         console.error('[Logout] Error clearing service worker cache:', error);
         resolve({ error: 'Failed to clear cache', timeout: false });
@@ -193,7 +193,7 @@ export default function Dashboard() {
   const [isLoadingDetailedStock, setIsLoadingDetailedStock] = useState(false);
   const [productSearchTerm, setProductSearchTerm] = useState('');
   const [productSortBy, setProductSortBy] = useState('name');
-  
+
   // Sales Summary state variables
   const [salesSummaryData, setSalesSummaryData] = useState<SalesSummary[]>([]);
   const [salesSummaryDataUnfiltered, setSalesSummaryDataUnfiltered] = useState<SalesSummary[]>([]);
@@ -284,7 +284,7 @@ export default function Dashboard() {
           const userLocations = (data.locations || []).map((loc: any) => Number(loc)); // Convert string IDs to numbers
           setCurrentUserLocations(userLocations);
           //console.log('Current User Role:', data.role);
-          //console.log('Current User Locations (original):', data.locations, 'Converted:', userLocations);
+          console.log('Current User Locations (original):', data.locations, 'Converted:', userLocations);
         }
       };
 
@@ -468,7 +468,7 @@ export default function Dashboard() {
 
           // Apply location filter if selected (using shared locationFilter state from Stock BB/FG)
           if (!locationFilter.includes('all') && locationFilter.length > 0) {
-            filteredData = filteredData.filter(item => 
+            filteredData = filteredData.filter(item =>
               locationFilter.includes(item.location) // Filter by location name (string)
             );
           } else if (locationFilter.length === 0) {
@@ -529,7 +529,7 @@ export default function Dashboard() {
 
           // Apply location filter if selected (using shared locationFilter state)
           if (!locationFilter.includes('all') && locationFilter.length > 0) {
-            filteredData = filteredData.filter(item => 
+            filteredData = filteredData.filter(item =>
               locationFilter.includes(item.location) // Filter by location name (string)
             );
           } else if (locationFilter.length === 0) {
@@ -549,6 +549,41 @@ export default function Dashboard() {
       fetchPembelianData();
     }
   }, [supabaseClient, pembelianPeriodFilter, locationFilter]);
+
+  // Helper function to get location names from IDs
+  const getLocationNamesFromIds = (locationIds: number[]) => {
+    // If no locations are loaded yet, return placeholder
+    if (allLocations.length === 0) {
+      console.log("No locations loaded yet, returning placeholder for IDs:", locationIds);
+      return locationIds.map(id => `Loading... (${id})`);
+    }
+
+    //console.log("ALL LOCATION ", allLocations.length, "locations:", allLocations.map(l => ({ id: l.id, name: l.name })));
+    //console.log("Looking for location IDs:", locationIds);
+
+    return locationIds.map(id => {
+      // Ensure ID is a number for comparison
+      const numericId = Number(id);
+      console.log(`Looking for location ID: ${numericId} (original: ${id}, type: ${typeof id})`);
+
+      // Try both numeric and string comparison in case of data type issues
+      const location = allLocations.find(loc => loc.id === numericId) ||
+        allLocations.find(loc => loc.id === id) ||
+        allLocations.find(loc => String(loc.id) === String(id));
+
+      if (location) {
+        console.log(`Found location: ${location.name} (ID: ${location.id})`);
+        // Show if location is inactive
+        return location.is_active ? location.name : `${location.name} (Inactive)`;
+      }
+      console.warn(`Location ID ${numericId} not found in locations list. Available locations:`, allLocations.map(l => ({ id: l.id, name: l.name, is_active: l.is_active })));
+      return `Unknown Location (${numericId})`;
+    });
+  };
+
+  const getCurrentUserLocationNames = () => {
+    return getLocationNamesFromIds(currentUserLocations);
+  };
 
   // Process stock data for BB (Raw Materials) and FG (Finished Goods) separately
   const processedStockDataBB = useMemo(() => {
@@ -605,14 +640,14 @@ export default function Dashboard() {
           if (upperCategory.includes('BERAS')) return 2;
           return 3;
         };
-        
+
         const orderA = getCategoryOrder(a.category);
         const orderB = getCategoryOrder(b.category);
-        
+
         if (orderA !== orderB) {
           return orderA - orderB;
         }
-        
+
         return a.category.localeCompare(b.category);
       });
   }, [stockData, userRole, currentUserLocations, locationFilter]);
@@ -755,7 +790,7 @@ export default function Dashboard() {
       group.total += item.total_qty_sales;
     });
 
-    return Array.from(grouped.values()).sort((a, b) => 
+    return Array.from(grouped.values()).sort((a, b) =>
       a.location.localeCompare(b.location) || a.category.localeCompare(b.category)
     );
   }, [salesSummaryData]);
@@ -779,7 +814,7 @@ export default function Dashboard() {
       const period = item.periode_date.substring(0, 7); // Extract YYYY-MM from date
       const fullDate = item.periode_date; // Full date (YYYY-MM-DD)
       const key = `${item.m_location_id}-${item.category_id || item.category_name}`;
-      
+
       if (!grouped.has(key)) {
         grouped.set(key, {
           location: item.location,
@@ -793,7 +828,7 @@ export default function Dashboard() {
       }
 
       const group = grouped.get(key)!;
-      
+
       // Aggregate quantities
       if (!group.periods[period]) {
         group.periods[period] = 0;
@@ -807,7 +842,7 @@ export default function Dashboard() {
       }
       const dateMap = group.periodPrices[period];
       const currentData = dateMap.get(fullDate) || { totalValue: 0, totalQty: 0 };
-      
+
       // Calculate weighted average: sum(price * qty) / sum(qty)
       dateMap.set(fullDate, {
         totalValue: currentData.totalValue + (item.priceharian * item.movementqty),
@@ -815,7 +850,7 @@ export default function Dashboard() {
       });
     });
 
-    return Array.from(grouped.values()).sort((a, b) => 
+    return Array.from(grouped.values()).sort((a, b) =>
       a.location.localeCompare(b.location) || a.category.localeCompare(b.category)
     );
   }, [pembelianData]);
@@ -831,13 +866,13 @@ export default function Dashboard() {
   }, [salesSummaryDataUnfiltered]);
 
   // Calculate total sales from sales_summary
-  const totalSalesFromSummary = useMemo(() => 
+  const totalSalesFromSummary = useMemo(() =>
     processedSalesData.reduce((sum, item) => sum + item.total, 0),
     [processedSalesData]
   );
 
   // Calculate total pembelian from processed data
-  const totalPembelianFromData = useMemo(() => 
+  const totalPembelianFromData = useMemo(() =>
     processedPembelianData.reduce((sum, item) => sum + item.total, 0),
     [processedPembelianData]
   );
@@ -848,7 +883,7 @@ export default function Dashboard() {
 
     // Group sales by location and period
     const locationPeriodData = new Map<string, Map<string, number>>();
-    
+
     salesSummaryData.forEach(item => {
       if (!locationPeriodData.has(item.location)) {
         locationPeriodData.set(item.location, new Map());
@@ -993,39 +1028,7 @@ export default function Dashboard() {
     }
   };
 
-  const getLocationNamesFromIds = (locationIds: number[]) => {
-    // If no locations are loaded yet, return placeholder
-    if (allLocations.length === 0) {
-      console.log("No locations loaded yet, returning placeholder for IDs:", locationIds);
-      return locationIds.map(id => `Loading... (${id})`);
-    }
 
-    //console.log("ALL LOCATION ", allLocations.length, "locations:", allLocations.map(l => ({ id: l.id, name: l.name })));
-    //console.log("Looking for location IDs:", locationIds);
-
-    return locationIds.map(id => {
-      // Ensure ID is a number for comparison
-      const numericId = Number(id);
-      console.log(`Looking for location ID: ${numericId} (original: ${id}, type: ${typeof id})`);
-
-      // Try both numeric and string comparison in case of data type issues
-      const location = allLocations.find(loc => loc.id === numericId) ||
-                      allLocations.find(loc => loc.id === id) ||
-                      allLocations.find(loc => String(loc.id) === String(id));
-
-      if (location) {
-        console.log(`Found location: ${location.name} (ID: ${location.id})`);
-        // Show if location is inactive
-        return location.is_active ? location.name : `${location.name} (Inactive)`;
-      }
-      console.warn(`Location ID ${numericId} not found in locations list. Available locations:`, allLocations.map(l => ({ id: l.id, name: l.name, is_active: l.is_active })));
-      return `Unknown Location (${numericId})`;
-    });
-  };
-
-  const getCurrentUserLocationNames = () => {
-    return getLocationNamesFromIds(currentUserLocations);
-  };
 
   const handleAddUser = () => {
     setEditingUser(null);
@@ -1178,7 +1181,7 @@ export default function Dashboard() {
         value: editingLocation.value,
         is_active: editingLocation.is_active,
       };
-  
+
       let error;
       if (editingLocation.id === 0) {
         // Add new
@@ -1194,19 +1197,19 @@ export default function Dashboard() {
           .eq('id', editingLocation.id);
         error = updateError;
       }
-  
+
       if (error) {
         console.error('Error saving location:', error);
         return;
       }
-  
+
       // Refresh locations
       const { data: locationsData } = await supabaseClient
         .from('master_locations')
         .select('*');
-  
+
       setAllLocations(locationsData || []);
-  
+
       setIsLocationDialogOpen(false);
     }
   };
@@ -1410,7 +1413,7 @@ export default function Dashboard() {
               <Truck className="w-8 h-8 text-green-600" />
             </div>
           </Card>
-          
+
           <Card className="p-4 border-green-200">
             <div className="flex items-center justify-between">
               <div>
@@ -1457,7 +1460,7 @@ export default function Dashboard() {
               <Scale className="w-6 h-6 text-blue-600" />
               <h3 className="text-lg font-semibold text-blue-900">Perbandingan Stok BB vs Broken</h3>
             </div>
-            
+
             <div className="space-y-4">
               {/* BB Section */}
               <div className="space-y-2">
@@ -1476,7 +1479,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
-                  <div 
+                  <div
                     className="bg-gradient-to-r from-green-500 to-green-600 h-4 rounded-full transition-all duration-500"
                     style={{ width: `${totalStockBB > 0 ? Math.min((totalStockBB / (totalStockBB + totalStockBroken)) * 100, 100) : 0}%` }}
                   ></div>
@@ -1500,7 +1503,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
-                  <div 
+                  <div
                     className="bg-gradient-to-r from-amber-500 to-amber-600 h-4 rounded-full transition-all duration-500"
                     style={{ width: `${totalStockBroken > 0 ? Math.min((totalStockBroken / (totalStockBB + totalStockBroken)) * 100, 100) : 0}%` }}
                   ></div>
@@ -1829,14 +1832,14 @@ export default function Dashboard() {
                     ))
                   )}
                 </div>
-                
+
               </div>
             </Card>
           </TabsContent>
 
           {/* Production Recap Tab */}
           <TabsContent value="production" className="space-y-4">
-            <ProductionRecap 
+            <ProductionRecap
               supabaseClient={supabaseClient}
               allLocations={allLocations}
               locationFilter={locationFilter}
@@ -1846,7 +1849,7 @@ export default function Dashboard() {
 
           {/* Production Recap Gabah Tab */}
           <TabsContent value="production-gabah" className="space-y-4">
-            <ProductionRecapGabah 
+            <ProductionRecapGabah
               supabaseClient={supabaseClient}
               allLocations={allLocations}
               locationFilter={locationFilter}
@@ -1860,14 +1863,14 @@ export default function Dashboard() {
               <div className="p-6">
                 <div className="flex flex-col space-y-4 mb-6">
                   <h3 className="text-lg font-semibold text-green-800">Data Penjualan</h3>
-                  
+
                   {/* Filters */}
                   <div className="flex flex-col space-y-3 p-4 bg-green-50 rounded-lg border border-green-100">
                     {/* Period Filter */}
                     <div className="flex flex-wrap items-center gap-2">
                       <Label className="text-sm text-green-700 font-medium min-w-[80px]">Periode:</Label>
-                      <Select 
-                        value={selectedPeriodRange} 
+                      <Select
+                        value={selectedPeriodRange}
                         onValueChange={(value) => {
                           setSalesPeriodFilter(getPeriodRange(value));
                           setSelectedPeriodRange(value);
@@ -1940,8 +1943,8 @@ export default function Dashboard() {
                 ) : salesError ? (
                   <div className="text-center py-12 text-red-600">
                     <p className="font-medium">{salesError}</p>
-                    <Button 
-                      onClick={() => window.location.reload()} 
+                    <Button
+                      onClick={() => window.location.reload()}
                       className="mt-4 bg-green-600 hover:bg-green-700"
                     >
                       Refresh Halaman
@@ -2010,14 +2013,14 @@ export default function Dashboard() {
               <div className="p-6">
                 <div className="flex flex-col space-y-4 mb-6">
                   <h3 className="text-lg font-semibold text-green-800">Data Pembelian</h3>
-                  
+
                   {/* Filters */}
                   <div className="flex flex-col space-y-3 p-4 bg-green-50 rounded-lg border border-green-100">
                     {/* Period Filter */}
                     <div className="flex flex-wrap items-center gap-2">
                       <Label className="text-sm text-green-700 font-medium min-w-[80px]">Periode:</Label>
-                      <Select 
-                        value={selectedPembelianPeriodRange} 
+                      <Select
+                        value={selectedPembelianPeriodRange}
                         onValueChange={(value) => {
                           setPembelianPeriodFilter(getPeriodRange(value));
                           setSelectedPembelianPeriodRange(value);
@@ -2090,8 +2093,8 @@ export default function Dashboard() {
                 ) : pembelianError ? (
                   <div className="text-center py-12 text-red-600">
                     <p className="font-medium">{pembelianError}</p>
-                    <Button 
-                      onClick={() => window.location.reload()} 
+                    <Button
+                      onClick={() => window.location.reload()}
                       className="mt-4 bg-green-600 hover:bg-green-700"
                     >
                       Refresh Halaman
@@ -2160,18 +2163,18 @@ export default function Dashboard() {
                                       </TableCell>
                                     );
                                   }
-                                  
+
                                   // Calculate weighted average for the period: sum(price × qty) / sum(qty) for all days
                                   let periodTotalValue = 0;
                                   let periodTotalQty = 0;
-                                  
+
                                   dateMap.forEach(dayData => {
                                     periodTotalValue += dayData.totalValue;
                                     periodTotalQty += dayData.totalQty;
                                   });
-                                  
+
                                   const periodAvg = periodTotalQty > 0 ? periodTotalValue / periodTotalQty : 0;
-                                  
+
                                   return (
                                     <TableCell key={period} className="text-right text-sm text-gray-700">
                                       {periodAvg > 0 ? `Rp ${Math.round(periodAvg).toLocaleString('id-ID')}` : '-'}
@@ -2183,7 +2186,7 @@ export default function Dashboard() {
                                     // Calculate overall weighted average price across all periods
                                     let overallTotalValue = 0;
                                     let overallTotalQty = 0;
-                                    
+
                                     Object.values(item.periodPrices).forEach(dateMap => {
                                       if (dateMap && dateMap.size > 0) {
                                         dateMap.forEach(dayData => {
@@ -2192,7 +2195,7 @@ export default function Dashboard() {
                                         });
                                       }
                                     });
-                                    
+
                                     const overallAvg = overallTotalQty > 0 ? overallTotalValue / overallTotalQty : 0;
                                     return overallAvg > 0 ? `Rp ${Math.round(overallAvg).toLocaleString('id-ID')}` : '-';
                                   })()}
@@ -2219,8 +2222,8 @@ export default function Dashboard() {
                     <div className="flex flex-col sm:flex-row gap-2">
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <Input 
-                          placeholder="Cari user..." 
+                        <Input
+                          placeholder="Cari user..."
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
                           className="pl-10 border-green-200"
@@ -2359,7 +2362,7 @@ export default function Dashboard() {
                         <>
                           <div className="space-y-2">
                             <Label htmlFor="username">Username *</Label>
-                            <Input 
+                            <Input
                               id="username"
                               placeholder="john_doe"
                               value={newUsername}
@@ -2368,7 +2371,7 @@ export default function Dashboard() {
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="password">Password *</Label>
-                            <Input 
+                            <Input
                               id="password"
                               type="password"
                               placeholder="Minimum 8 characters"
@@ -2563,149 +2566,148 @@ export default function Dashboard() {
           )}
 
           {/* Stock Detail Dialog */}
-           <Dialog open={isStockDetailDialogOpen} onOpenChange={setIsStockDetailDialogOpen}>
-             <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-5xl max-h-[85vh] overflow-y-auto">
-               <DialogHeader>
-                 <DialogTitle className="text-lg sm:text-xl">Detail Stok - {selectedStockItem?.category} ({selectedStockItem?.location})</DialogTitle>
-               </DialogHeader>
-               {selectedStockItem && (
-                 <div className="space-y-4 py-4">
-                   {/* Summary Section */}
-                   <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                       <div className="space-y-1">
-                         <Label className="text-xs sm:text-sm font-medium text-gray-600">Kategori</Label>
-                         <p className="font-semibold text-sm sm:text-base lg:text-lg break-words">{selectedStockItem.category}</p>
-                       </div>
-                       <div className="space-y-1">
-                         <Label className="text-xs sm:text-sm font-medium text-gray-600">Lokasi</Label>
-                         <p className="font-semibold text-sm sm:text-base lg:text-lg break-words">{selectedStockItem.location}</p>
-                       </div>
-                       <div className="space-y-1">
-                         <Label className="text-xs sm:text-sm font-medium text-gray-600">Total Items</Label>
-                         <p className="font-bold text-lg sm:text-xl lg:text-2xl text-green-800">
-                           {isLoadingDetailedStock ? '...' : filteredAndSortedProducts.length}
-                         </p>
-                       </div>
-                       <div className="space-y-1">
-                         <Label className="text-xs sm:text-sm font-medium text-gray-600">Total Quantity</Label>
-                         <p className="font-bold text-lg sm:text-xl lg:text-2xl text-green-800 break-words">
-                           {isLoadingDetailedStock ? '...' : `${(filteredAndSortedProducts.reduce((sum, item) => sum + Number(item.sumqtyonhand), 0) / 1000).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ${selectedStockItem.unit}`}
-                         </p>
-                       </div>
-                     </div>
+          <Dialog open={isStockDetailDialogOpen} onOpenChange={setIsStockDetailDialogOpen}>
+            <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-5xl max-h-[85vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-lg sm:text-xl">Detail Stok - {selectedStockItem?.category} ({selectedStockItem?.location})</DialogTitle>
+              </DialogHeader>
+              {selectedStockItem && (
+                <div className="space-y-4 py-4">
+                  {/* Summary Section */}
+                  <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-xs sm:text-sm font-medium text-gray-600">Kategori</Label>
+                        <p className="font-semibold text-sm sm:text-base lg:text-lg break-words">{selectedStockItem.category}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs sm:text-sm font-medium text-gray-600">Lokasi</Label>
+                        <p className="font-semibold text-sm sm:text-base lg:text-lg break-words">{selectedStockItem.location}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs sm:text-sm font-medium text-gray-600">Total Items</Label>
+                        <p className="font-bold text-lg sm:text-xl lg:text-2xl text-green-800">
+                          {isLoadingDetailedStock ? '...' : filteredAndSortedProducts.length}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs sm:text-sm font-medium text-gray-600">Total Quantity</Label>
+                        <p className="font-bold text-lg sm:text-xl lg:text-2xl text-green-800 break-words">
+                          {isLoadingDetailedStock ? '...' : `${(filteredAndSortedProducts.reduce((sum, item) => sum + Number(item.sumqtyonhand), 0) / 1000).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ${selectedStockItem.unit}`}
+                        </p>
+                      </div>
+                    </div>
 
-                     <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
-                       <div className={`inline-flex px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${
-                         selectedStockItem.product_type === 'RAW MATERIAL'
-                           ? 'bg-green-100 text-green-800'
-                           : selectedStockItem.product_type === 'BROKEN'
-                           ? 'bg-amber-100 text-amber-800'
-                           : 'bg-blue-100 text-blue-800'
-                       }`}>
-                         {selectedStockItem.product_type === 'RAW MATERIAL' 
-                           ? 'Bahan Baku (BB)' 
-                           : selectedStockItem.product_type === 'BROKEN'
-                           ? 'Produk Broken'
-                           : 'Barang Jadi (FG)'}
-                       </div>
-                     </div>
-                   </div>
+                    <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
+                      <div className={`inline-flex px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${selectedStockItem.product_type === 'RAW MATERIAL'
+                        ? 'bg-green-100 text-green-800'
+                        : selectedStockItem.product_type === 'BROKEN'
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-blue-100 text-blue-800'
+                        }`}>
+                        {selectedStockItem.product_type === 'RAW MATERIAL'
+                          ? 'Bahan Baku (BB)'
+                          : selectedStockItem.product_type === 'BROKEN'
+                            ? 'Produk Broken'
+                            : 'Barang Jadi (FG)'}
+                      </div>
+                    </div>
+                  </div>
 
-                   {/* Search and Filter Controls */}
-                   {!isLoadingDetailedStock && detailedStockItems.length > 0 && (
-                     <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
-                       <div className="flex-1 min-w-0">
-                         <div className="relative">
-                           <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3 sm:w-4 sm:h-4" />
-                           <Input
-                             placeholder="Cari produk atau kode..."
-                             value={productSearchTerm}
-                             onChange={(e) => setProductSearchTerm(e.target.value)}
-                             className="pl-8 sm:pl-10 text-sm"
-                           />
-                         </div>
-                       </div>
-                       <div className="sm:w-40 lg:w-48 flex-shrink-0">
-                         <Select value={productSortBy} onValueChange={setProductSortBy}>
-                           <SelectTrigger className="text-sm">
-                             <SelectValue placeholder="Urutkan" />
-                           </SelectTrigger>
-                           <SelectContent>
-                             <SelectItem value="name">Nama Produk</SelectItem>
-                             <SelectItem value="code">Kode Produk</SelectItem>
-                             <SelectItem value="quantity-high">Jumlah (Tertinggi)</SelectItem>
-                             <SelectItem value="quantity-low">Jumlah (Terendah)</SelectItem>
-                           </SelectContent>
-                         </Select>
-                       </div>
-                     </div>
-                   )}
+                  {/* Search and Filter Controls */}
+                  {!isLoadingDetailedStock && detailedStockItems.length > 0 && (
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
+                      <div className="flex-1 min-w-0">
+                        <div className="relative">
+                          <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3 sm:w-4 sm:h-4" />
+                          <Input
+                            placeholder="Cari produk atau kode..."
+                            value={productSearchTerm}
+                            onChange={(e) => setProductSearchTerm(e.target.value)}
+                            className="pl-8 sm:pl-10 text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="sm:w-40 lg:w-48 flex-shrink-0">
+                        <Select value={productSortBy} onValueChange={setProductSortBy}>
+                          <SelectTrigger className="text-sm">
+                            <SelectValue placeholder="Urutkan" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="name">Nama Produk</SelectItem>
+                            <SelectItem value="code">Kode Produk</SelectItem>
+                            <SelectItem value="quantity-high">Jumlah (Tertinggi)</SelectItem>
+                            <SelectItem value="quantity-low">Jumlah (Terendah)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
 
-                   {/* Detailed Products Section */}
-                   <div className="border rounded-lg">
-                     <div className="p-3 sm:p-4 border-b bg-gray-50">
-                       <h3 className="font-semibold text-sm sm:text-base text-gray-800">Detail Produk</h3>
-                     </div>
+                  {/* Detailed Products Section */}
+                  <div className="border rounded-lg">
+                    <div className="p-3 sm:p-4 border-b bg-gray-50">
+                      <h3 className="font-semibold text-sm sm:text-base text-gray-800">Detail Produk</h3>
+                    </div>
 
-                     <div className="max-h-64 sm:max-h-80 lg:max-h-96 overflow-y-auto">
-                       {isLoadingDetailedStock ? (
-                         <div className="p-6 sm:p-8 text-center text-gray-600">
-                           <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-green-600 mx-auto mb-2"></div>
-                           <p className="text-sm sm:text-base">Memuat detail produk...</p>
-                         </div>
-                       ) : filteredAndSortedProducts.length === 0 ? (
-                         <div className="p-6 sm:p-8 text-center text-gray-600">
-                           <p className="text-sm sm:text-base">
-                             {detailedStockItems.length === 0
-                               ? 'Tidak ada produk ditemukan untuk kategori dan lokasi ini'
-                               : 'Tidak ada produk yang sesuai dengan filter pencarian'
-                             }
-                           </p>
-                         </div>
-                       ) : (
-                         <div className="divide-y">
-                           {filteredAndSortedProducts.map((product, index) => (
-                             <div key={index} className="p-3 sm:p-4 hover:bg-gray-50 transition-colors">
-                               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 items-center">
-                                 <div className="sm:col-span-1 lg:col-span-2 min-w-0">
-                                   <Label className="text-xs font-medium text-gray-500 block">Nama Produk</Label>
-                                   <p className="font-medium text-xs sm:text-sm text-gray-900 break-words mt-1">{product.name}</p>
-                                   {/* <p className="text-xs text-gray-500 mt-1 break-all">{product.m_product_id}</p> */}
-                                 </div>
-                                 <div className="text-left sm:text-right lg:text-right">
-                                   <Label className="text-xs font-medium text-gray-500 block">Stok</Label>
-                                   <p className="font-bold text-sm sm:text-base text-green-800 mt-1">
-                                     {(Number(product.sumqtyonhand) / 1000).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Ton
-                                   </p>
-                                 </div>
-                               </div>
-                             </div>
-                           ))}
-                         </div>
-                       )}
-                     </div>
-                   </div>
+                    <div className="max-h-64 sm:max-h-80 lg:max-h-96 overflow-y-auto">
+                      {isLoadingDetailedStock ? (
+                        <div className="p-6 sm:p-8 text-center text-gray-600">
+                          <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-green-600 mx-auto mb-2"></div>
+                          <p className="text-sm sm:text-base">Memuat detail produk...</p>
+                        </div>
+                      ) : filteredAndSortedProducts.length === 0 ? (
+                        <div className="p-6 sm:p-8 text-center text-gray-600">
+                          <p className="text-sm sm:text-base">
+                            {detailedStockItems.length === 0
+                              ? 'Tidak ada produk ditemukan untuk kategori dan lokasi ini'
+                              : 'Tidak ada produk yang sesuai dengan filter pencarian'
+                            }
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="divide-y">
+                          {filteredAndSortedProducts.map((product, index) => (
+                            <div key={index} className="p-3 sm:p-4 hover:bg-gray-50 transition-colors">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 items-center">
+                                <div className="sm:col-span-1 lg:col-span-2 min-w-0">
+                                  <Label className="text-xs font-medium text-gray-500 block">Nama Produk</Label>
+                                  <p className="font-medium text-xs sm:text-sm text-gray-900 break-words mt-1">{product.name}</p>
+                                  {/* <p className="text-xs text-gray-500 mt-1 break-all">{product.m_product_id}</p> */}
+                                </div>
+                                <div className="text-left sm:text-right lg:text-right">
+                                  <Label className="text-xs font-medium text-gray-500 block">Stok</Label>
+                                  <p className="font-bold text-sm sm:text-base text-green-800 mt-1">
+                                    {(Number(product.sumqtyonhand) / 1000).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Ton
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-                   <div className="flex justify-end pt-3 sm:pt-4">
-                     <Button
-                       variant="outline"
-                       size="sm"
-                       onClick={() => {
-                         setIsStockDetailDialogOpen(false);
-                         setDetailedStockItems([]);
-                         setProductSearchTerm('');
-                         setProductSortBy('name');
-                       }}
-                       className="text-sm"
-                     >
-                       Tutup
-                     </Button>
-                   </div>
-                 </div>
-               )}
-             </DialogContent>
-           </Dialog>
+                  <div className="flex justify-end pt-3 sm:pt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setIsStockDetailDialogOpen(false);
+                        setDetailedStockItems([]);
+                        setProductSearchTerm('');
+                        setProductSortBy('name');
+                      }}
+                      className="text-sm"
+                    >
+                      Tutup
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
         </Tabs>
       </main>
     </div>
