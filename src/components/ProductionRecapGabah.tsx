@@ -22,13 +22,15 @@ interface ProductionRecapGabahProps {
   allLocations: Array<{ id: number; name: string; value: string; is_active: boolean }>;
   locationFilter: string[];
   userRole: string | null;
+  currentUserLocations: number[];
 }
 
 export default function ProductionRecapGabah({ 
   supabaseClient, 
   allLocations,
   locationFilter,
-  userRole 
+  userRole,
+  currentUserLocations
 }: ProductionRecapGabahProps) {
   const [productionData, setProductionData] = useState<ProductionRecapGabahData[]>([]);
   const [isLoadingProduction, setIsLoadingProduction] = useState(true);
@@ -36,6 +38,34 @@ export default function ProductionRecapGabah({
   const [selectedMonth, setSelectedMonth] = useState<string>(''); // Format: YYYY-MM
   const [selectedLocation, setSelectedLocation] = useState<string>('all'); // 'all' or location name
   const [error, setError] = useState<string | null>(null);
+
+  // Helper function to check if a location is accessible by the current user
+  const isLocationAccessible = (locationId: number): boolean => {
+    if (userRole === 'SUPERADMIN_ROLE' || userRole === 'BOD_ROLE') {
+      return true;
+    }
+    return currentUserLocations.includes(locationId);
+  };
+
+  // Initialize selectedLocation based on user role
+  useEffect(() => {
+    if (userRole && allLocations.length > 0) {
+      if (userRole !== 'SUPERADMIN_ROLE' && userRole !== 'BOD_ROLE') {
+        // For restricted roles, default to first accessible location
+        const accessibleLocations = allLocations.filter(
+          loc => loc.is_active && currentUserLocations.includes(loc.id)
+        );
+        if (accessibleLocations.length > 0 && selectedLocation === 'all') {
+          setSelectedLocation(accessibleLocations[0].name);
+        }
+      }
+    }
+  }, [userRole, allLocations, currentUserLocations]);
+
+  // Helper function to safely return 0 for NaN values
+  const safeNumber = (num: number): number => {
+    return isNaN(num) || !isFinite(num) ? 0 : num;
+  };
 
   // Helper function to format month name in Indonesian
   const formatMonthName = (dateString: string) => {
@@ -183,7 +213,7 @@ export default function ProductionRecapGabah({
 
       // Calculate Rendemen WIP = (WIP-GABAH / GKG) * 100
       const rendemenWIP = gkgTon > 0 
-        ? (wipGabahTon / gkgTon) * 100 
+        ? safeNumber((wipGabahTon / gkgTon) * 100)
         : 0;
 
       // Extract TR-BERAS quantity for Rendemen Turunan Beras calculation
@@ -192,19 +222,19 @@ export default function ProductionRecapGabah({
 
       // Calculate Rendemen Turunan Beras = (TR-BERAS / GKG) * 100
       const rendemenTurunanBeras = gkgTon > 0 
-        ? (trBerasTon / gkgTon) * 100 
+        ? safeNumber((trBerasTon / gkgTon) * 100)
         : 0;
 
       return {
         location,
         locationId: data[0]?.m_location_id,
         totalGabahQty: totalGabahTon,
-        rendemenWIP: rendemenWIP,
-        rendemenTurunanBeras: rendemenTurunanBeras,
+        rendemenWIP: safeNumber(rendemenWIP),
+        rendemenTurunanBeras: safeNumber(rendemenTurunanBeras),
         productBreakdown: Array.from(byProduct.entries()).map(([product, qty]) => ({
           product,
           qty: Math.round(Math.abs(qty) / 1000), // Convert to TON and use absolute value
-          percentage: totalGabahQty > 0 ? (Math.abs(qty) / Math.abs(totalGabahQty)) * 100 : 0
+          percentage: totalGabahQty > 0 ? safeNumber((Math.abs(qty) / Math.abs(totalGabahQty)) * 100) : 0
         })).sort((a, b) => {
           // Custom sort: WIP-GABAH, TR-Beras, GKG, TR-Lain, then others
           const orderA = productOrder[a.product] || 999;
@@ -270,12 +300,23 @@ export default function ProductionRecapGabah({
                 <SelectValue placeholder="Semua Lokasi" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Semua Lokasi</SelectItem>
-                {availableLocations.map((location) => (
-                  <SelectItem key={location} value={location}>
-                    {location}
-                  </SelectItem>
-                ))}
+                {(userRole === 'SUPERADMIN_ROLE' || userRole === 'BOD_ROLE') && (
+                  <SelectItem value="all">Semua Lokasi</SelectItem>
+                )}
+                {availableLocations.map((location) => {
+                  const locationData = allLocations.find(loc => loc.name === location);
+                  const isAccessible = locationData ? isLocationAccessible(locationData.id) : true;
+                  return (
+                    <SelectItem 
+                      key={location} 
+                      value={location}
+                      disabled={!isAccessible}
+                      className={!isAccessible ? 'text-gray-400' : ''}
+                    >
+                      {location}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -384,7 +425,7 @@ export default function ProductionRecapGabah({
                     <p className="text-xs text-purple-600 mb-2">Total Produksi Gabah (WIP-TP) / Pemakaian GKG × 100%</p>
                     <div className="flex items-baseline gap-2">
                       <p className="text-3xl sm:text-4xl font-bold text-purple-900">
-                        {Math.round(locationStats.rendemenWIP)}
+                        {safeNumber(Math.round(locationStats.rendemenWIP))}
                       </p>
                       <span className="text-xl sm:text-2xl font-semibold text-purple-700">%</span>
                     </div>
@@ -407,7 +448,7 @@ export default function ProductionRecapGabah({
                     <p className="text-xs text-sky-600 mb-2">Turunan Beras / Pemakaian GKG × 100%</p>
                     <div className="flex items-baseline gap-2">
                       <p className="text-3xl sm:text-4xl font-bold text-sky-900">
-                        {Math.round(locationStats.rendemenTurunanBeras)}
+                        {safeNumber(Math.round(locationStats.rendemenTurunanBeras))}
                       </p>
                       <span className="text-xl sm:text-2xl font-semibold text-sky-700">%</span>
                     </div>

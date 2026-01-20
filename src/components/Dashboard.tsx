@@ -363,6 +363,43 @@ export default function Dashboard() {
     }
   }, [supabaseClient, allLocations.length]);
 
+  // Initialize locationFilter based on user role and assigned locations
+  useEffect(() => {
+    if (userRole && allLocations.length > 0) {
+      // For SUPERADMIN and BOD, keep 'all' as default
+      if (userRole === 'SUPERADMIN_ROLE' || userRole === 'BOD_ROLE') {
+        // Already initialized with ['all'], no change needed
+        return;
+      }
+      
+      // For other roles, set locationFilter to their assigned location names
+      if (currentUserLocations.length > 0) {
+        const assignedLocationNames = allLocations
+          .filter(loc => currentUserLocations.includes(loc.id))
+          .map(loc => loc.name);
+        
+        if (assignedLocationNames.length > 0) {
+          setLocationFilter(assignedLocationNames);
+        }
+      }
+    }
+  }, [userRole, currentUserLocations, allLocations]);
+
+  // Helper function to check if a location is accessible by the current user
+  const isLocationAccessible = (locationId: number): boolean => {
+    // SUPERADMIN and BOD can access all locations
+    if (userRole === 'SUPERADMIN_ROLE' || userRole === 'BOD_ROLE') {
+      return true;
+    }
+    // Other roles can only access their assigned locations
+    return currentUserLocations.includes(locationId);
+  };
+
+  // Helper function to safely return 0 for NaN values
+  const safeNumber = (num: number): number => {
+    return isNaN(num) || !isFinite(num) ? 0 : num;
+  };
+
   // Fetch stock data from Supabase
   useEffect(() => {
     if (supabaseClient) {
@@ -1474,14 +1511,14 @@ export default function Dashboard() {
                       {totalStockBB.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Ton
                     </span>
                     <p className="text-sm text-green-600 mt-1">
-                      ({((totalStockBB / (totalStockBB + totalStockBroken)) * 100).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)
+                      ({safeNumber((totalStockBB / (totalStockBB + totalStockBroken)) * 100).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)
                     </p>
                   </div>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
                   <div
                     className="bg-gradient-to-r from-green-500 to-green-600 h-4 rounded-full transition-all duration-500"
-                    style={{ width: `${totalStockBB > 0 ? Math.min((totalStockBB / (totalStockBB + totalStockBroken)) * 100, 100) : 0}%` }}
+                    style={{ width: `${totalStockBB > 0 ? Math.min(safeNumber((totalStockBB / (totalStockBB + totalStockBroken)) * 100), 100) : 0}%` }}
                   ></div>
                 </div>
               </div>
@@ -1498,14 +1535,14 @@ export default function Dashboard() {
                       {totalStockBroken.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Ton
                     </span>
                     <p className="text-sm text-amber-600 mt-1">
-                      ({((totalStockBroken / (totalStockBB + totalStockBroken)) * 100).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)
+                      ({safeNumber((totalStockBroken / (totalStockBB + totalStockBroken)) * 100).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)
                     </p>
                   </div>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
                   <div
                     className="bg-gradient-to-r from-amber-500 to-amber-600 h-4 rounded-full transition-all duration-500"
-                    style={{ width: `${totalStockBroken > 0 ? Math.min((totalStockBroken / (totalStockBB + totalStockBroken)) * 100, 100) : 0}%` }}
+                    style={{ width: `${totalStockBroken > 0 ? Math.min(safeNumber((totalStockBroken / (totalStockBB + totalStockBroken)) * 100), 100) : 0}%` }}
                   ></div>
                 </div>
               </div>
@@ -1560,28 +1597,31 @@ export default function Dashboard() {
                   <div className="flex flex-col sm:flex-row gap-2">
                     <div className="flex flex-wrap gap-2 items-center">
                       <Label className="text-sm text-green-700 mr-2">Filter Lokasi:</Label>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="all-locations-bb"
-                          checked={locationFilter.includes('all')}
-                          onCheckedChange={(checked: boolean) => {
-                            if (checked) {
-                              setLocationFilter(['all']);
-                            } else if (locationFilter.length === 1) {
-                              setLocationFilter([]);
-                            }
-                          }}
-                        />
-                        <Label htmlFor="all-locations-bb" className="text-sm text-green-700">
-                          Semua Lokasi
-                        </Label>
-                      </div>
+                      {(userRole === 'SUPERADMIN_ROLE' || userRole === 'BOD_ROLE') && (
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="all-locations-bb"
+                            checked={locationFilter.includes('all')}
+                            onCheckedChange={(checked: boolean) => {
+                              if (checked) {
+                                setLocationFilter(['all']);
+                              } else if (locationFilter.length === 1) {
+                                setLocationFilter([]);
+                              }
+                            }}
+                          />
+                          <Label htmlFor="all-locations-bb" className="text-sm text-green-700">
+                            Semua Lokasi
+                          </Label>
+                        </div>
+                      )}
                       <div className="flex flex-wrap gap-2 ml-2">
                         {allLocations.filter(location => location.is_active).sort((a, b) => a.name.localeCompare(b.name)).map((location) => (
                           <div key={location.id} className="flex items-center space-x-1">
                             <Checkbox
                               id={`location-bb-${location.id}`}
                               checked={locationFilter.includes(location.name)}
+                              disabled={!isLocationAccessible(location.id)}
                               onCheckedChange={(checked: boolean) => {
                                 if (checked) {
                                   if (locationFilter.includes('all')) {
@@ -1594,7 +1634,7 @@ export default function Dashboard() {
                                 }
                               }}
                             />
-                            <Label htmlFor={`location-bb-${location.id}`} className="text-xs text-green-700">
+                            <Label htmlFor={`location-bb-${location.id}`} className={`text-xs ${isLocationAccessible(location.id) ? 'text-green-700' : 'text-gray-400'}`}>
                               {location.name}
                             </Label>
                           </div>
@@ -1659,28 +1699,31 @@ export default function Dashboard() {
                   <div className="flex flex-col sm:flex-row gap-2">
                     <div className="flex flex-wrap gap-2 items-center">
                       <Label className="text-sm text-amber-700 mr-2">Filter Lokasi:</Label>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="all-locations-broken"
-                          checked={locationFilter.includes('all')}
-                          onCheckedChange={(checked: boolean) => {
-                            if (checked) {
-                              setLocationFilter(['all']);
-                            } else if (locationFilter.length === 1) {
-                              setLocationFilter([]);
-                            }
-                          }}
-                        />
-                        <Label htmlFor="all-locations-broken" className="text-sm text-amber-700">
-                          Semua Lokasi
-                        </Label>
-                      </div>
+                      {(userRole === 'SUPERADMIN_ROLE' || userRole === 'BOD_ROLE') && (
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="all-locations-broken"
+                            checked={locationFilter.includes('all')}
+                            onCheckedChange={(checked: boolean) => {
+                              if (checked) {
+                                setLocationFilter(['all']);
+                              } else if (locationFilter.length === 1) {
+                                setLocationFilter([]);
+                              }
+                            }}
+                          />
+                          <Label htmlFor="all-locations-broken" className="text-sm text-amber-700">
+                            Semua Lokasi
+                          </Label>
+                        </div>
+                      )}
                       <div className="flex flex-wrap gap-2 ml-2">
                         {allLocations.filter(location => location.is_active).sort((a, b) => a.name.localeCompare(b.name)).map((location) => (
                           <div key={location.id} className="flex items-center space-x-1">
                             <Checkbox
                               id={`location-broken-${location.id}`}
                               checked={locationFilter.includes(location.name)}
+                              disabled={!isLocationAccessible(location.id)}
                               onCheckedChange={(checked: boolean) => {
                                 if (checked) {
                                   if (locationFilter.includes('all')) {
@@ -1693,7 +1736,7 @@ export default function Dashboard() {
                                 }
                               }}
                             />
-                            <Label htmlFor={`location-broken-${location.id}`} className="text-xs text-amber-700">
+                            <Label htmlFor={`location-broken-${location.id}`} className={`text-xs ${isLocationAccessible(location.id) ? 'text-amber-700' : 'text-gray-400'}`}>
                               {location.name}
                             </Label>
                           </div>
@@ -1758,28 +1801,31 @@ export default function Dashboard() {
                   <div className="flex flex-col sm:flex-row gap-2">
                     <div className="flex flex-wrap gap-2 items-center">
                       <Label className="text-sm text-blue-700 mr-2">Filter Lokasi:</Label>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="all-locations-fg"
-                          checked={locationFilter.includes('all')}
-                          onCheckedChange={(checked: boolean) => {
-                            if (checked) {
-                              setLocationFilter(['all']);
-                            } else if (locationFilter.length === 1) {
-                              setLocationFilter([]);
-                            }
-                          }}
-                        />
-                        <Label htmlFor="all-locations-fg" className="text-sm text-blue-700">
-                          Semua Lokasi
-                        </Label>
-                      </div>
+                      {(userRole === 'SUPERADMIN_ROLE' || userRole === 'BOD_ROLE') && (
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="all-locations-fg"
+                            checked={locationFilter.includes('all')}
+                            onCheckedChange={(checked: boolean) => {
+                              if (checked) {
+                                setLocationFilter(['all']);
+                              } else if (locationFilter.length === 1) {
+                                setLocationFilter([]);
+                              }
+                            }}
+                          />
+                          <Label htmlFor="all-locations-fg" className="text-sm text-blue-700">
+                            Semua Lokasi
+                          </Label>
+                        </div>
+                      )}
                       <div className="flex flex-wrap gap-2 ml-2">
                         {allLocations.filter(location => location.is_active).sort((a, b) => a.name.localeCompare(b.name)).map((location) => (
                           <div key={location.id} className="flex items-center space-x-1">
                             <Checkbox
                               id={`location-fg-${location.id}`}
                               checked={locationFilter.includes(location.name)}
+                              disabled={!isLocationAccessible(location.id)}
                               onCheckedChange={(checked: boolean) => {
                                 if (checked) {
                                   if (locationFilter.includes('all')) {
@@ -1792,7 +1838,7 @@ export default function Dashboard() {
                                 }
                               }}
                             />
-                            <Label htmlFor={`location-fg-${location.id}`} className="text-xs text-blue-700">
+                            <Label htmlFor={`location-fg-${location.id}`} className={`text-xs ${isLocationAccessible(location.id) ? 'text-blue-700' : 'text-gray-400'}`}>
                               {location.name}
                             </Label>
                           </div>
@@ -1844,6 +1890,7 @@ export default function Dashboard() {
               allLocations={allLocations}
               locationFilter={locationFilter}
               userRole={userRole}
+              currentUserLocations={currentUserLocations}
             />
           </TabsContent>
 
@@ -1854,6 +1901,7 @@ export default function Dashboard() {
               allLocations={allLocations}
               locationFilter={locationFilter}
               userRole={userRole}
+              currentUserLocations={currentUserLocations}
             />
           </TabsContent>
 
@@ -1894,25 +1942,28 @@ export default function Dashboard() {
                     <div className="flex flex-wrap items-start gap-2">
                       <Label className="text-sm text-green-700 font-medium min-w-[80px] pt-1">Lokasi:</Label>
                       <div className="flex flex-wrap gap-2">
-                        <div className="flex items-center space-x-1">
-                          <Checkbox
-                            id="all-sales-locations"
-                            checked={locationFilter.includes('all')}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setLocationFilter(['all']);
-                              } else if (locationFilter.length === 1) {
-                                setLocationFilter([]);
-                              }
-                            }}
-                          />
-                          <Label htmlFor="all-sales-locations" className="text-xs text-green-700">Semua</Label>
-                        </div>
+                        {(userRole === 'SUPERADMIN_ROLE' || userRole === 'BOD_ROLE') && (
+                          <div className="flex items-center space-x-1">
+                            <Checkbox
+                              id="all-sales-locations"
+                              checked={locationFilter.includes('all')}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setLocationFilter(['all']);
+                                } else if (locationFilter.length === 1) {
+                                  setLocationFilter([]);
+                                }
+                              }}
+                            />
+                            <Label htmlFor="all-sales-locations" className="text-xs text-green-700">Semua</Label>
+                          </div>
+                        )}
                         {allLocations.filter(location => location.is_active).sort((a, b) => a.name.localeCompare(b.name)).map((location) => (
                           <div key={location.id} className="flex items-center space-x-1">
                             <Checkbox
                               id={`sales-loc-${location.id}`}
                               checked={locationFilter.includes(location.name)}
+                              disabled={!isLocationAccessible(location.id)}
                               onCheckedChange={(checked) => {
                                 if (checked) {
                                   if (locationFilter.includes('all')) {
@@ -1925,7 +1976,7 @@ export default function Dashboard() {
                                 }
                               }}
                             />
-                            <Label htmlFor={`sales-loc-${location.id}`} className="text-xs text-green-700">
+                            <Label htmlFor={`sales-loc-${location.id}`} className={`text-xs ${isLocationAccessible(location.id) ? 'text-green-700' : 'text-gray-400'}`}>
                               {location.name}
                             </Label>
                           </div>
@@ -2044,25 +2095,28 @@ export default function Dashboard() {
                     <div className="flex flex-wrap items-start gap-2">
                       <Label className="text-sm text-green-700 font-medium min-w-[80px] pt-1">Lokasi:</Label>
                       <div className="flex flex-wrap gap-2">
-                        <div className="flex items-center space-x-1">
-                          <Checkbox
-                            id="all-pembelian-locations"
-                            checked={locationFilter.includes('all')}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setLocationFilter(['all']);
-                              } else if (locationFilter.length === 1) {
-                                setLocationFilter([]);
-                              }
-                            }}
-                          />
-                          <Label htmlFor="all-pembelian-locations" className="text-xs text-green-700">Semua</Label>
-                        </div>
+                        {(userRole === 'SUPERADMIN_ROLE' || userRole === 'BOD_ROLE') && (
+                          <div className="flex items-center space-x-1">
+                            <Checkbox
+                              id="all-pembelian-locations"
+                              checked={locationFilter.includes('all')}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setLocationFilter(['all']);
+                                } else if (locationFilter.length === 1) {
+                                  setLocationFilter([]);
+                                }
+                              }}
+                            />
+                            <Label htmlFor="all-pembelian-locations" className="text-xs text-green-700">Semua</Label>
+                          </div>
+                        )}
                         {allLocations.filter(location => location.is_active).sort((a, b) => a.name.localeCompare(b.name)).map((location) => (
                           <div key={location.id} className="flex items-center space-x-1">
                             <Checkbox
                               id={`pembelian-loc-${location.id}`}
                               checked={locationFilter.includes(location.name)}
+                              disabled={!isLocationAccessible(location.id)}
                               onCheckedChange={(checked) => {
                                 if (checked) {
                                   if (locationFilter.includes('all')) {
@@ -2075,7 +2129,7 @@ export default function Dashboard() {
                                 }
                               }}
                             />
-                            <Label htmlFor={`pembelian-loc-${location.id}`} className="text-xs text-green-700">
+                            <Label htmlFor={`pembelian-loc-${location.id}`} className={`text-xs ${isLocationAccessible(location.id) ? 'text-green-700' : 'text-gray-400'}`}>
                               {location.name}
                             </Label>
                           </div>
