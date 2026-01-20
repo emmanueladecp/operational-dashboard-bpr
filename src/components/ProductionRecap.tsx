@@ -22,13 +22,15 @@ interface ProductionRecapProps {
   allLocations: Array<{ id: number; name: string; value: string; is_active: boolean }>;
   locationFilter: string[];
   userRole: string | null;
+  currentUserLocations: number[];
 }
 
 export default function ProductionRecap({ 
   supabaseClient, 
   allLocations,
   locationFilter,
-  userRole 
+  userRole,
+  currentUserLocations
 }: ProductionRecapProps) {
   const [productionData, setProductionData] = useState<ProductionRecapData[]>([]);
   const [isLoadingProduction, setIsLoadingProduction] = useState(true);
@@ -36,6 +38,34 @@ export default function ProductionRecap({
   const [selectedMonth, setSelectedMonth] = useState<string>(''); // Format: YYYY-MM
   const [selectedLocation, setSelectedLocation] = useState<string>('all'); // 'all' or location name
   const [error, setError] = useState<string | null>(null);
+
+  // Helper function to check if a location is accessible by the current user
+  const isLocationAccessible = (locationId: number): boolean => {
+    if (userRole === 'SUPERADMIN_ROLE' || userRole === 'BOD_ROLE') {
+      return true;
+    }
+    return currentUserLocations.includes(locationId);
+  };
+
+  // Initialize selectedLocation based on user role
+  useEffect(() => {
+    if (userRole && allLocations.length > 0) {
+      if (userRole !== 'SUPERADMIN_ROLE' && userRole !== 'BOD_ROLE') {
+        // For restricted roles, default to first accessible location
+        const accessibleLocations = allLocations.filter(
+          loc => loc.is_active && currentUserLocations.includes(loc.id)
+        );
+        if (accessibleLocations.length > 0 && selectedLocation === 'all') {
+          setSelectedLocation(accessibleLocations[0].name);
+        }
+      }
+    }
+  }, [userRole, allLocations, currentUserLocations]);
+
+  // Helper function to safely return 0 for NaN values
+  const safeNumber = (num: number): number => {
+    return isNaN(num) || !isFinite(num) ? 0 : num;
+  };
 
   // Helper function to format month name in Indonesian
   const formatMonthName = (dateString: string) => {
@@ -188,17 +218,17 @@ export default function ProductionRecap({
       
       // Calculate Rendemen FG = (Total Produksi / Pemakaian Bahan Baku) * 100
       const rendemenPercentage = bahanBakuTon > 0 
-        ? (endProductTon / bahanBakuTon) * 100 
+        ? safeNumber((endProductTon / bahanBakuTon) * 100)
         : 0;
       
       // Calculate Rendemen Turunan Beras = (Turunan Beras / Pemakaian Bahan Baku) * 100
       const rendemenTurunanBeras = bahanBakuTon > 0 
-        ? (turunanTon / bahanBakuTon) * 100 
+        ? safeNumber((turunanTon / bahanBakuTon) * 100)
         : 0;
       
       // Calculate Rendemen Turunan Lain = (Turunan Lain / Pemakaian Bahan Baku) * 100
       const rendemenTurunanLain = bahanBakuTon > 0 
-        ? (turunanLainTon / bahanBakuTon) * 100 
+        ? safeNumber((turunanLainTon / bahanBakuTon) * 100)
         : 0;
 
       return {
@@ -208,9 +238,9 @@ export default function ProductionRecap({
         turunanQty: turunanTon,
         bahanBakuQty: bahanBakuTon,
         turunanLainQty: turunanLainTon,
-        rendemenPercentage: rendemenPercentage,
-        rendemenTurunanBeras: rendemenTurunanBeras,
-        rendemenTurunanLain: rendemenTurunanLain
+        rendemenPercentage: safeNumber(rendemenPercentage),
+        rendemenTurunanBeras: safeNumber(rendemenTurunanBeras),
+        rendemenTurunanLain: safeNumber(rendemenTurunanLain)
       };
     });
 
@@ -298,12 +328,23 @@ export default function ProductionRecap({
                 <SelectValue placeholder="Semua Lokasi" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Semua Lokasi</SelectItem>
-                {availableLocations.map((location) => (
-                  <SelectItem key={location} value={location}>
-                    {location}
-                  </SelectItem>
-                ))}
+                {(userRole === 'SUPERADMIN_ROLE' || userRole === 'BOD_ROLE') && (
+                  <SelectItem value="all">Semua Lokasi</SelectItem>
+                )}
+                {availableLocations.map((location) => {
+                  const locationData = allLocations.find(loc => loc.name === location);
+                  const isAccessible = locationData ? isLocationAccessible(locationData.id) : true;
+                  return (
+                    <SelectItem 
+                      key={location} 
+                      value={location}
+                      disabled={!isAccessible}
+                      className={!isAccessible ? 'text-gray-400' : ''}
+                    >
+                      {location}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
