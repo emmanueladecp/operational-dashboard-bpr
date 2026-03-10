@@ -17,6 +17,14 @@ interface ProductionRecapData {
   max_qty?: number;
 }
 
+interface ProductionDailyData {
+  m_location_id: number;
+  location: string;
+  period_date: string;
+  jenisproduk: string;
+  qty: number;
+}
+
 interface ProductionRecapProps {
   supabaseClient: SupabaseClient | null;
   allLocations: Array<{ id: number; name: string; value: string; is_active: boolean }>;
@@ -33,6 +41,7 @@ export default function ProductionRecap({
   currentUserLocations
 }: ProductionRecapProps) {
   const [productionData, setProductionData] = useState<ProductionRecapData[]>([]);
+  const [mtdDailyData, setMtdDailyData] = useState<ProductionDailyData[]>([]);
   const [isLoadingProduction, setIsLoadingProduction] = useState(true);
   const [viewMode, setViewMode] = useState<'mtd' | 'periodic'>('mtd');
   const [selectedMonth, setSelectedMonth] = useState<string>(''); // Format: YYYY-MM
@@ -114,6 +123,53 @@ export default function ProductionRecap({
     fetchProductionData();
   }, [supabaseClient]);
 
+  // Fetch daily FG data for MTD working days calculation
+  useEffect(() => {
+    const fetchMtdDailyData = async () => {
+      if (!supabaseClient || viewMode !== 'mtd') {
+        setMtdDailyData([]);
+        return;
+      }
+
+      try {
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+          .toISOString()
+          .split('T')[0];
+        const firstDayOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+          .toISOString()
+          .split('T')[0];
+
+        let query = supabaseClient
+          .from('production_recap')
+          .select('m_location_id, location, period_date, jenisproduk, qty')
+          .eq('jenisproduk', 'FG')
+          .gte('period_date', firstDayOfMonth)
+          .lt('period_date', firstDayOfNextMonth)
+          .order('period_date', { ascending: false });
+
+        if (selectedLocation !== 'all') {
+          query = query.eq('location', selectedLocation);
+        }
+
+        const { data, error: fetchError } = await query;
+
+        if (fetchError) {
+          console.error('Error fetching MTD daily data:', fetchError);
+          setMtdDailyData([]);
+          return;
+        }
+
+        setMtdDailyData(data || []);
+      } catch (err) {
+        console.error('Error in fetchMtdDailyData:', err);
+        setMtdDailyData([]);
+      }
+    };
+
+    fetchMtdDailyData();
+  }, [supabaseClient, viewMode, selectedLocation]);
+
   // Get available months from data
   const availableMonths = useMemo(() => {
     const months = Array.from(new Set(productionData.map(item => {
@@ -193,6 +249,14 @@ export default function ProductionRecap({
       locationGroups.set(item.location, [...existing, item]);
     });
 
+    const workingDaysByLocation = new Map<string, Set<string>>();
+    mtdDailyData.forEach(item => {
+      if (!workingDaysByLocation.has(item.location)) {
+        workingDaysByLocation.set(item.location, new Set());
+      }
+      workingDaysByLocation.get(item.location)?.add(item.period_date);
+    });
+
     // Calculate statistics for each location
     const result = Array.from(locationGroups.entries()).map(([location, data]) => {
       const endProductQty = data
@@ -211,10 +275,17 @@ export default function ProductionRecap({
         .filter(item => item?.jenisproduk === 'TR-LAIN')
         .reduce((sum, item) => sum + (item?.total_qty || 0), 0);
 
+      const endProductTonExact = (endProductQty || 0) / 1000;
       const endProductTon = Math.round((endProductQty || 0) / 1000); // Convert to TON and round
       const turunanTon = Math.round((turunanQty || 0) / 1000); // Convert to TON and round
       const bahanBakuTon = Math.round(Math.abs(bahanBakuQty || 0) / 1000); // Convert to TON and round
       const turunanLainTon = Math.round((turunanLainQty || 0) / 1000); // Convert to TON and round
+      const workingDays = viewMode === 'mtd'
+        ? (workingDaysByLocation.get(location)?.size || 0)
+        : 0;
+      const avgDailyProductionTon = workingDays > 0
+        ? safeNumber(endProductTonExact / workingDays)
+        : 0;
       
       // Calculate Rendemen FG = (Total Produksi / Pemakaian Bahan Baku) * 100
       const rendemenPercentage = bahanBakuTon > 0 
@@ -238,6 +309,8 @@ export default function ProductionRecap({
         turunanQty: turunanTon,
         bahanBakuQty: bahanBakuTon,
         turunanLainQty: turunanLainTon,
+        workingDays,
+        avgDailyProductionTon,
         rendemenPercentage: safeNumber(rendemenPercentage),
         rendemenTurunanBeras: safeNumber(rendemenTurunanBeras),
         rendemenTurunanLain: safeNumber(rendemenTurunanLain)
@@ -246,7 +319,7 @@ export default function ProductionRecap({
 
     // Sort by location name
     return result.sort((a, b) => a.location.localeCompare(b.location));
-  }, [allFilteredData]);
+   }, [allFilteredData, mtdDailyData, viewMode]);
 
   // Get unique products for legend
   const uniqueProducts = useMemo(() => {
@@ -436,6 +509,36 @@ export default function ProductionRecap({
                     <Layers className="w-10 h-10 sm:w-12 sm:h-12 text-teal-600 opacity-80" />
                   </div>
                 </Card>
+
+                {viewMode === 'mtd' && (
+                  <Card className="p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-indigo-700 font-medium">Jumlah Hari Kerja</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-indigo-900 mt-1">
+                          {locationStats.workingDays.toLocaleString('id-ID')} <span className="text-lg sm:text-xl">HARI</span>
+                        </p>
+                        <p className="text-xs text-indigo-600 mt-1">MTD (FG)</p>
+                      </div>
+                      <Calendar className="w-10 h-10 sm:w-12 sm:h-12 text-indigo-600 opacity-80" />
+                    </div>
+                  </Card>
+                )}
+
+                {viewMode === 'mtd' && (
+                  <Card className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-emerald-700 font-medium">Rata-rata Produksi Harian</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-emerald-900 mt-1">
+                          {formatNumber(locationStats.avgDailyProductionTon)} <span className="text-lg sm:text-xl">TON</span>
+                        </p>
+                        <p className="text-xs text-emerald-600 mt-1">MTD (FG) / Hari Kerja</p>
+                      </div>
+                      <Gauge className="w-10 h-10 sm:w-12 sm:h-12 text-emerald-600 opacity-80" />
+                    </div>
+                  </Card>
+                )}
 
               
               </div>
